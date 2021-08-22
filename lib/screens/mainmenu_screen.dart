@@ -6,6 +6,7 @@ import 'package:pgc/screens/worklist.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:badges/badges.dart';
+import 'package:pgc/widgets/dialogbox/callDialogBox.dart';
 import 'package:pgc/widgets/profilebar.dart';
 import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -201,51 +202,7 @@ void _showDialog(context) {
     transitionDuration: Duration(milliseconds: 250),
     context: context,
     pageBuilder: (_, __, ___) {
-      return Column(
-        children: <Widget>[
-          Container(
-            width: double.infinity,
-            margin: EdgeInsets.only(top: 125, left: 40, right: 40),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                SizedBox(
-                  height: 30,
-                ),
-                Text(
-                  'ติดต่อเจ้าหน้าที่',
-                  style: callDialogTextStyle,
-                ),
-                Text(
-                  'โทร. 097-347-1602',
-                  style: callDialogTextStyle,
-                ),
-                SizedBox(
-                  height: 30,
-                ),
-                GestureDetector(
-                  onTap: () {
-                    _makePhoneCall('tel:0973471602');
-                  },
-                  child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                        border: Border(
-                            top: BorderSide(width: 0.75, color: Colors.black))),
-                    child: Center(
-                      child: Text('โทร', style: callDialogTextStyle),
-                    ),
-                  ),
-                )
-              ],
-            ),
-          )
-        ],
-      );
+      return CallDialogBox('097-347-1602');
     },
     transitionBuilder: (_, anim, __, child) {
       return SlideTransition(

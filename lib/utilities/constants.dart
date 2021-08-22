@@ -45,12 +45,36 @@ final callDialogBlueTextStyle = TextStyle(
     fontSize: 22,
     decoration: TextDecoration.none);
 
+final callDialogRedTextStyle = TextStyle(
+    fontFamily: 'Prompt',
+    letterSpacing: 0.2,
+    fontWeight: FontWeight.normal,
+    color: Colors.red,
+    fontSize: 22,
+    decoration: TextDecoration.none);
+
+final callDialogGreenTextStyle = TextStyle(
+    fontFamily: 'Prompt',
+    letterSpacing: 0.2,
+    fontWeight: FontWeight.normal,
+    color: Color.fromRGBO(92, 184, 92, 1),
+    fontSize: 22,
+    decoration: TextDecoration.none);
+
 final buttonDialogTextStyle = TextStyle(
     fontFamily: 'Prompt',
     letterSpacing: 0.2,
     fontWeight: FontWeight.normal,
     color: Colors.white,
     fontSize: 20,
+    decoration: TextDecoration.none);
+
+final employeeInfoDialogHeaderTextStyle = TextStyle(
+    fontFamily: 'Prompt',
+    letterSpacing: 0.2,
+    fontWeight: FontWeight.bold,
+    color: Colors.black,
+    fontSize: 22,
     decoration: TextDecoration.none);
 
 final commonHeaderLabelStyle = TextStyle(

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:pgc/screens/confirmfinishjob.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/widgets/backpressincontainer.dart';
+import 'package:pgc/widgets/dialogbox/employeeInfoDialogBox.dart';
+import 'package:pgc/widgets/dialogbox/errorEmployeeInfoDialogBox.dart';
+import 'package:pgc/widgets/dialogbox/savedEmployeeInfoDialogBox.dart';
+import 'package:pgc/widgets/dialogbox/successEmployeeInfoDialogBox.dart';
 import 'package:pgc/widgets/profilebar.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/model/passenger.dart';
@@ -46,7 +50,15 @@ class _ScanAndListState extends State<ScanAndList> {
       });
       print(status);
     });
+
     super.initState();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      print('resume');
+    }
   }
 
   @override
@@ -245,7 +257,11 @@ Container _arrivedPassengerListPage(passengers) {
 GestureDetector _endScanButton(context, status) {
   return GestureDetector(
     onTap: () {
-      _goConfirmFinishJob(context, status);
+      /* _goConfirmFinishJob(context, status); */
+      /*   _showDialog(context); */
+      /*     _showDialogError(context); */
+      /*  _showDialogSuccess(context); */
+      /*   _showDialogSaved(context); */
     },
     child: Container(
       height: 60,
@@ -277,7 +293,6 @@ GestureDetector _backButton(context) {
 }
 
 void _goConfirmFinishJob(context, status) {
-  print(status);
   if (status == 'finished') {
     Navigator.pop(context);
   } else if (status == 'non-success') {
@@ -288,4 +303,197 @@ void _goConfirmFinishJob(context, status) {
       MaterialPageRoute(builder: (context) => ConfirmFinishJob()),
     );
   }
+}
+
+void _showDialog(context) async {
+  bool shouldUpdate = await showGeneralDialog(
+    barrierLabel: "Barrier",
+    barrierDismissible: true,
+    barrierColor: Colors.black.withOpacity(0.5),
+    transitionDuration: Duration(milliseconds: 250),
+    context: context,
+    pageBuilder: (_, __, ___) {
+      return _employeeInfoDialogBox(context);
+    },
+  );
+
+  print(shouldUpdate);
+}
+
+void _showDialogError(context) async {
+  bool shouldUpdate = await showGeneralDialog(
+    barrierLabel: "Barrier",
+    barrierDismissible: true,
+    barrierColor: Colors.black.withOpacity(0.5),
+    transitionDuration: Duration(milliseconds: 250),
+    context: context,
+    pageBuilder: (_, __, ___) {
+      return ErrorEmployeeInfoDialogBox('ไม่พบข้อมูลผู้โดยสารในเที่ยวนี้');
+    },
+  );
+
+  print(shouldUpdate);
+}
+
+void _showDialogSaved(context) async {
+  bool shouldUpdate = await showGeneralDialog(
+    barrierLabel: "Barrier",
+    barrierDismissible: true,
+    barrierColor: Colors.black.withOpacity(0.5),
+    transitionDuration: Duration(milliseconds: 250),
+    context: context,
+    pageBuilder: (_, __, ___) {
+      return SavedEmployeeInfoDialogBox('ระบบบันทึกข้อมูลแล้ว');
+    },
+  );
+
+  print(shouldUpdate);
+}
+
+void _showDialogSuccess(context) async {
+  bool shouldUpdate = await showGeneralDialog(
+    barrierLabel: "Barrier",
+    barrierDismissible: true,
+    barrierColor: Colors.black.withOpacity(0.5),
+    transitionDuration: Duration(milliseconds: 250),
+    context: context,
+    pageBuilder: (_, __, ___) {
+      return SuccessEmployeeInfoDialogBox('ผู้โดยสารขึ้นครบถ้วนแล้ว');
+    },
+  );
+
+  print(shouldUpdate);
+}
+
+Container _employeeInfoDialogBox(context) {
+  bool haveImage = false;
+  return Container(
+    alignment: Alignment.topCenter,
+    child: Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 100, left: 40, right: 40, bottom: 120),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          SizedBox(
+            height: 10,
+          ),
+          Text(
+            'ข้อมูลพนักงาน',
+            style: employeeInfoDialogHeaderTextStyle,
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          Expanded(
+            child: Container(
+              child: haveImage ? NetworkImage('' ?? "") : Container(),
+              margin: EdgeInsets.only(left: 50, right: 50, top: 15, bottom: 60),
+              decoration: BoxDecoration(
+                color: Color.fromRGBO(218, 218, 218, 1),
+                image: DecorationImage(
+                  image: AssetImage("assets/images/user.png"),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+          Text(
+            'นาย: TEST',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: callDialogBlackTextStyle,
+          ),
+          SizedBox(
+            height: 2,
+          ),
+          Text(
+            'รหัสพนักงาน: TEST',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: callDialogBlackTextStyle,
+          ),
+          SizedBox(
+            height: 2,
+          ),
+          Text(
+            'แผนก: TEST',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: callDialogBlackTextStyle,
+          ),
+          SizedBox(
+            height: 30,
+          ),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context, false);
+                      _onCancel(context);
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Color.fromRGBO(137, 137, 137, 1),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.zero,
+                          topRight: Radius.zero,
+                          bottomLeft: Radius.circular(8),
+                          bottomRight: Radius.zero,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'ไม่ยืนยัน',
+                          style: buttonDialogTextStyle,
+                        ),
+                      ),
+                    )),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context, true);
+                    _onConfirm(context);
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Color.fromRGBO(1, 84, 155, 1),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.zero,
+                        topRight: Radius.zero,
+                        bottomLeft: Radius.zero,
+                        bottomRight: Radius.circular(8),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'ยืนยัน',
+                        style: buttonDialogTextStyle,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+void _onConfirm(context) {
+  print('Confirm');
+}
+
+void _onCancel(context) {
+  print('Cancel');
 }

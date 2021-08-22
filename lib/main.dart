@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
         );
       },
       title: "GPS Tracking",
-      home: SplashScreen(),
+      home: ProcessWork(),
     );
   }
 }
