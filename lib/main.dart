@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pgc/screens/changepassword_screen.dart';
+import 'package:pgc/screens/exampleqr.dart';
 import 'package:pgc/screens/history.dart';
 import 'package:pgc/screens/processwork.dart';
 import 'package:pgc/screens/setting_screen.dart';
@@ -35,7 +36,7 @@ class MyApp extends StatelessWidget {
         );
       },
       title: "GPS Tracking",
-      home: ProcessWork(),
+      home: SplashScreen(),
     );
   }
 }

@@ -1,3 +1,7 @@
+import 'dart:developer';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pgc/screens/confirmfinishjob.dart';
 import 'package:pgc/widgets/background.dart';
@@ -11,6 +15,7 @@ import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/model/passenger.dart';
 import 'package:pgc/widgets/tabbutton.dart';
 import 'package:pgc/widgets/commonsmallprocessbackground.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class ScanAndList extends StatefulWidget {
   @override
@@ -18,6 +23,9 @@ class ScanAndList extends StatefulWidget {
 }
 
 class _ScanAndListState extends State<ScanAndList> {
+  Barcode result;
+  QRViewController controller;
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   int _selectedPage = 0;
   PageController _pageController;
   String status = '';
@@ -33,6 +41,15 @@ class _ScanAndListState extends State<ScanAndList> {
           duration: Duration(milliseconds: 500),
           curve: Curves.fastLinearToSlowEaseIn);
     });
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (Platform.isAndroid) {
+      controller.pauseCamera();
+    }
+    controller.resumeCamera();
   }
 
   @override
@@ -64,6 +81,7 @@ class _ScanAndListState extends State<ScanAndList> {
   @override
   void dispose() {
     _pageController.dispose();
+    controller?.dispose();
     super.dispose();
   }
 
@@ -144,27 +162,292 @@ class _ScanAndListState extends State<ScanAndList> {
       ),
     ));
   }
-}
 
-Container _scanPage(context, status) {
-  return Container(
-      padding: EdgeInsets.only(left: 10.0, right: 10.0, bottom: 10.0),
-      child: Column(
-        children: <Widget>[
-          SizedBox(
-            height: 10,
-          ),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(color: Colors.black),
+  Widget _buildQrView(BuildContext context) {
+    // For this example we check how width or tall the device is and change the scanArea and overlay accordingly.
+    var scanArea = (MediaQuery.of(context).size.width < 400 ||
+            MediaQuery.of(context).size.height < 400)
+        ? 250.0
+        : 300.0;
+    // To ensure the Scanner view is properly sizes after rotation
+    // we need to listen for Flutter SizeChanged notification and update controller
+    return QRView(
+      key: qrKey,
+      onQRViewCreated: _onQRViewCreated,
+      overlay: QrScannerOverlayShape(
+          borderColor: Colors.blue,
+          borderRadius: 10,
+          borderLength: 30,
+          borderWidth: 10,
+          cutOutSize: scanArea),
+      onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
+    );
+  }
+
+  void _onQRViewCreated(QRViewController controller) {
+    setState(() {
+      this.controller = controller;
+    });
+    controller.scannedDataStream.listen((scanData) {
+      setState(() {
+        result = scanData;
+        print(result);
+        controller?.pauseCamera();
+        _showDialog(context, result.code);
+      });
+    });
+  }
+
+  void _showDialog(context, text) async {
+    bool shouldUpdate = await showGeneralDialog(
+      barrierLabel: "Barrier",
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: Duration(milliseconds: 250),
+      context: context,
+      pageBuilder: (_, __, ___) {
+        return _employeeInfoDialogBox(context, text);
+      },
+    );
+
+    print(shouldUpdate);
+  }
+
+  void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
+    log('${DateTime.now().toIso8601String()}_onPermissionSet $p');
+    print('object');
+    if (!p) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('no Permission')),
+      );
+    }
+  }
+
+  Container _scanPage(context, status) {
+    return Container(
+        padding: EdgeInsets.only(left: 10.0, right: 10.0, bottom: 10.0),
+        child: Column(
+          children: <Widget>[
+            SizedBox(
+              height: 10,
             ),
-          ),
-          SizedBox(
-            height: 5,
-          ),
-          _endScanButton(context, status)
-        ],
-      ));
+            Expanded(flex: 4, child: _buildQrView(context)),
+            /*       Expanded(
+              flex: 1,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: <Widget>[
+                    if (result != null)
+                      Text(
+                          'Barcode Type: ${describeEnum(result.format)}   Data: ${result.code}')
+                    else
+                      Text('Scan a code'),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        Container(
+                          margin: EdgeInsets.all(8),
+                          /*  child: ElevatedButton(
+                              onPressed: () async {
+                                await controller?.toggleFlash();
+                                setState(() {});
+                              },
+                              child: FutureBuilder(
+                                future: controller?.getFlashStatus(),
+                                builder: (context, snapshot) {
+                                  return Text('Flash: ${snapshot.data}');
+                                },
+                              )) */
+                        ),
+                        Container(
+                          margin: EdgeInsets.all(8),
+                          /*   child: ElevatedButton(
+                              onPressed: () async {
+                                await controller?.flipCamera();
+                                setState(() {});
+                              },
+                              child: FutureBuilder(
+                                future: controller?.getCameraInfo(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.data != null) {
+                                    return Text(
+                                        'Camera facing ${describeEnum(snapshot.data)}');
+                                  } else {
+                                    return Text('loading');
+                                  }
+                                },
+                              )), */
+                        )
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        Container(
+                          margin: EdgeInsets.all(8),
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              await controller?.pauseCamera();
+                            },
+                            child:
+                                Text('pause', style: TextStyle(fontSize: 20)),
+                          ),
+                        ),
+                        Container(
+                          margin: EdgeInsets.all(8),
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              await controller?.resumeCamera();
+                            },
+                            child:
+                                Text('resume', style: TextStyle(fontSize: 20)),
+                          ),
+                        )
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ), */
+            SizedBox(
+              height: 10,
+            ),
+            _endScanButton(context, status)
+          ],
+        ));
+  }
+
+  Container _employeeInfoDialogBox(context, text) {
+    bool haveImage = false;
+    return Container(
+      alignment: Alignment.topCenter,
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.only(top: 100, left: 40, right: 40, bottom: 120),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            SizedBox(
+              height: 10,
+            ),
+            Text(
+              'ข้อมูลพนักงาน',
+              style: employeeInfoDialogHeaderTextStyle,
+            ),
+            SizedBox(
+              height: 10,
+            ),
+            Expanded(
+              child: Container(
+                child: haveImage ? NetworkImage('' ?? "") : Container(),
+                margin:
+                    EdgeInsets.only(left: 50, right: 50, top: 15, bottom: 60),
+                decoration: BoxDecoration(
+                  color: Color.fromRGBO(218, 218, 218, 1),
+                  image: DecorationImage(
+                    image: AssetImage("assets/images/user.png"),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
+            Text(
+              'นาย: ${text}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: callDialogBlackTextStyle,
+            ),
+            SizedBox(
+              height: 2,
+            ),
+            Text(
+              'รหัสพนักงาน: TEST',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: callDialogBlackTextStyle,
+            ),
+            SizedBox(
+              height: 2,
+            ),
+            Text(
+              'แผนก: TEST',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: callDialogBlackTextStyle,
+            ),
+            SizedBox(
+              height: 30,
+            ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context, false);
+                        _onCancel(context);
+                        controller?.resumeCamera();
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Color.fromRGBO(137, 137, 137, 1),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.zero,
+                            topRight: Radius.zero,
+                            bottomLeft: Radius.circular(8),
+                            bottomRight: Radius.zero,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'ไม่ยืนยัน',
+                            style: buttonDialogTextStyle,
+                          ),
+                        ),
+                      )),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context, true);
+                      controller?.resumeCamera();
+                      _onConfirm(context);
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Color.fromRGBO(1, 84, 155, 1),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.zero,
+                          topRight: Radius.zero,
+                          bottomLeft: Radius.zero,
+                          bottomRight: Radius.circular(8),
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'ยืนยัน',
+                          style: buttonDialogTextStyle,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 Container _arrivedPassengerListPage(passengers) {
@@ -305,21 +588,6 @@ void _goConfirmFinishJob(context, status) {
   }
 }
 
-void _showDialog(context) async {
-  bool shouldUpdate = await showGeneralDialog(
-    barrierLabel: "Barrier",
-    barrierDismissible: true,
-    barrierColor: Colors.black.withOpacity(0.5),
-    transitionDuration: Duration(milliseconds: 250),
-    context: context,
-    pageBuilder: (_, __, ___) {
-      return _employeeInfoDialogBox(context);
-    },
-  );
-
-  print(shouldUpdate);
-}
-
 void _showDialogError(context) async {
   bool shouldUpdate = await showGeneralDialog(
     barrierLabel: "Barrier",
@@ -363,131 +631,6 @@ void _showDialogSuccess(context) async {
   );
 
   print(shouldUpdate);
-}
-
-Container _employeeInfoDialogBox(context) {
-  bool haveImage = false;
-  return Container(
-    alignment: Alignment.topCenter,
-    child: Container(
-      width: double.infinity,
-      margin: EdgeInsets.only(top: 100, left: 40, right: 40, bottom: 120),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          SizedBox(
-            height: 10,
-          ),
-          Text(
-            'ข้อมูลพนักงาน',
-            style: employeeInfoDialogHeaderTextStyle,
-          ),
-          SizedBox(
-            height: 10,
-          ),
-          Expanded(
-            child: Container(
-              child: haveImage ? NetworkImage('' ?? "") : Container(),
-              margin: EdgeInsets.only(left: 50, right: 50, top: 15, bottom: 60),
-              decoration: BoxDecoration(
-                color: Color.fromRGBO(218, 218, 218, 1),
-                image: DecorationImage(
-                  image: AssetImage("assets/images/user.png"),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-          Text(
-            'นาย: TEST',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: callDialogBlackTextStyle,
-          ),
-          SizedBox(
-            height: 2,
-          ),
-          Text(
-            'รหัสพนักงาน: TEST',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: callDialogBlackTextStyle,
-          ),
-          SizedBox(
-            height: 2,
-          ),
-          Text(
-            'แผนก: TEST',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: callDialogBlackTextStyle,
-          ),
-          SizedBox(
-            height: 30,
-          ),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context, false);
-                      _onCancel(context);
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Color.fromRGBO(137, 137, 137, 1),
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.zero,
-                          topRight: Radius.zero,
-                          bottomLeft: Radius.circular(8),
-                          bottomRight: Radius.zero,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'ไม่ยืนยัน',
-                          style: buttonDialogTextStyle,
-                        ),
-                      ),
-                    )),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context, true);
-                    _onConfirm(context);
-                  },
-                  child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Color.fromRGBO(1, 84, 155, 1),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.zero,
-                        topRight: Radius.zero,
-                        bottomLeft: Radius.zero,
-                        bottomRight: Radius.circular(8),
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'ยืนยัน',
-                        style: buttonDialogTextStyle,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
-  );
 }
 
 void _onConfirm(context) {
