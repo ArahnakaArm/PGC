@@ -9,6 +9,7 @@ import 'package:pgc/screens/setting_screen.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:badges/badges.dart';
+import 'package:connectivity/connectivity.dart';
 
 class ProfileBarWithDepartment extends StatefulWidget {
   @override
@@ -21,12 +22,19 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
   User user;
   String baseProfileUrl;
   bool haveImage = false;
+  var firstName;
+  var lastName;
+  var profileUrl = "";
+  var department;
+  bool isConnect = true;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    _getProfile();
+    _checkInternet();
+/*     _getProfile(); */
+    _getProfileStorage();
   }
 
   @override
@@ -44,8 +52,12 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
               children: [
                 CircleAvatar(
                   radius: 23.0,
-                  backgroundImage: haveImage
-                      ? NetworkImage(baseProfileUrl ?? "")
+                  backgroundImage: isConnect
+                      ? haveImage
+                          ? NetworkImage(profileUrl ?? "")
+                          : AssetImage(
+                              'assets/images/user.png',
+                            )
                       : AssetImage(
                           'assets/images/user.png',
                         ),
@@ -63,7 +75,7 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
                       ), */
 
                           Text(
-                            user?.resultData?.firstnameTh ?? "",
+                            firstName ?? "",
                             style: profileNameStyle,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -71,7 +83,7 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
                             width: 10,
                           ),
                           Text(
-                            user?.resultData?.lastnameTh ?? "",
+                            lastName ?? "",
                             style: profileNameStyle,
                             overflow: TextOverflow.ellipsis,
                           )
@@ -85,7 +97,7 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
                     style: profileNameStyle,
                   ) */
                       Text(
-                        "แผนก: ${user?.resultData?.empInfo?.empDepartmentInfo?.empDepartmentNameTh ?? ""}",
+                        "แผนก: ${department ?? ""}",
                         style: profileNameStyle,
                         overflow: TextOverflow.ellipsis,
                       )
@@ -134,8 +146,25 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
         ]);
   }
 
+  void _checkInternet() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult == ConnectivityResult.mobile) {
+      // I am connected to a mobile network.
+    } else if (connectivityResult == ConnectivityResult.wifi) {
+      //
+    } else {
+      isConnect = false;
+    }
+  }
+
   Future<void> _getProfile() async {
     final storage = new FlutterSecureStorage();
+
+/*     setState(() {
+      user.resultData.firstnameTh = storage.read(key: 'firstName');
+    }); */
+
+    /* final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
     var getUserByMeUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
@@ -147,8 +176,6 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
     setState(() {
       user = userFromJson(res.body) ?? '';
     });
-
-    print(user.resultData.imageProfileFile);
 
     if (user.resultData.imageProfileFile != null) {
       var checkImage = await http.get(Uri.parse(
@@ -168,6 +195,68 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
     } else {
       haveImage = false;
     }
+  } */
+  }
+
+  void _getProfileStorage() async {
+    final storage = new FlutterSecureStorage();
+    var firstNameTh = await storage.read(key: 'firstName');
+    var lastNameTh = await storage.read(key: 'lastName');
+    var profileUrlTh = await storage.read(key: 'profileUrl');
+    var departmentTh = await storage.read(key: 'department');
+
+    if (profileUrlTh == null || profileUrlTh == '') {
+      setState(() {
+        firstName = firstNameTh;
+        lastName = lastNameTh;
+        department = departmentTh;
+        haveImage = false;
+      });
+    } else {
+      setState(() {
+        firstName = firstNameTh;
+        lastName = lastNameTh;
+        department = departmentTh;
+
+        if (profileUrlTh != null || profileUrlTh != '') {
+          haveImage = true;
+          profileUrl = dotenv.env['BASE_URL_PROFILE'] + profileUrlTh;
+        } else {
+          haveImage = false;
+          profileUrl = "";
+        }
+      });
+    }
+    /*    setState(() {
+      firstName = firstNameTh;
+      lastName = lastNameTh;
+      department = departmentTh;
+
+      if (profileUrlTh != null || profileUrlTh != '') {
+        haveImage = true;
+        profileUrl = dotenv.env['BASE_URL_PROFILE'] + profileUrlTh;
+      } else {
+        haveImage = false;
+        profileUrl = "";
+      }
+    }); */
+
+    /*   setState(() async {
+      firstName = await storage.read(key: 'firstName');
+      print(firstName);
+      lastName = await storage.read(key: 'lastName');
+      profileUrl = await storage.read(key: 'profileUrl');
+
+      if (profileUrl != null) {
+        haveImage = true;
+        profileUrl = dotenv.env['BASE_URL_PROFILE'] + profileUrl;
+      } else {
+        haveImage = false;
+        profileUrl = "";
+      }
+
+      department = await storage.read(key: 'department');
+    }); */
   }
 }
 

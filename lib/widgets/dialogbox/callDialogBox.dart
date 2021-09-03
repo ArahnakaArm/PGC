@@ -45,8 +45,20 @@ class CallDialogBox extends StatelessWidget {
                       border: Border(
                           top: BorderSide(width: 0.75, color: Colors.black))),
                   child: Center(
-                    child: Text('โทร', style: callDialogTextStyle),
-                  ),
+                      child: Text('โทร',
+                          style:
+                              callDialogTextStyle) /* Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Image.asset(
+                          'assets/images/viber.png',
+                          height: 27,
+                          width: 35,
+                        ),
+                        /*         Text('โทร', style: callDialogTextStyle), */
+                      ],
+                    ), */
+                      ),
                 ),
               )
             ],

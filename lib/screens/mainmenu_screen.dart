@@ -1,13 +1,20 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:connectivity/connectivity.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:pgc/responseModel/buslistinfo.dart';
+import 'package:pgc/responseModel/user.dart';
 import 'package:pgc/screens/history.dart';
-import 'package:pgc/screens/processwork.dart';
 import 'package:pgc/screens/worklist.dart';
+import 'package:pgc/services/http/getHttpWithToken.dart';
+import 'package:pgc/services/utils/common.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:badges/badges.dart';
 import 'package:pgc/widgets/dialogbox/callDialogBox.dart';
-import 'package:pgc/widgets/profilebar.dart';
 import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -18,6 +25,11 @@ class MainMenuScreen extends StatefulWidget {
 
 class _MainMenuScreenState extends State<MainMenuScreen> {
   DateTime current;
+  User user;
+  BusListInfo busListInfo;
+  var workCounts;
+  get http => null;
+  bool isConnect = true;
 
   Future<bool> popped() {
     FToast fToast = FToast();
@@ -44,6 +56,18 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
       Fluttertoast.cancel();
       return Future.value(true);
     }
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    _checkInternet();
+    /*    if (isConnect) {
+      _getWorkCounts();
+    }
+ */
+    super.initState();
+    /*   _getProfile(); */
   }
 
   @override
@@ -78,6 +102,31 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             ],
           ),
         )));
+  }
+
+  Future<void> _getProfile() async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+    var getUserByMeUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
+
+    /*    var userByMeRes = await getHttpWithToken(getUserByMeUrl, token); */
+    var res = await getHttpWithToken(
+      getUserByMeUrl,
+      token,
+    );
+
+    setState(() {
+      user = userFromJson(res) ?? '';
+      storage.write(key: 'profileUrl', value: user.resultData.imageProfileFile);
+      storage.write(key: 'firstName', value: user.resultData.firstnameTh);
+      storage.write(key: 'lastName', value: user.resultData.lastnameTh);
+      storage.write(
+          key: 'department',
+          value:
+              user.resultData.empInfo.empDepartmentInfo.empDepartmentNameTh ??
+                  "");
+    });
   }
 
   GestureDetector _getCommonBoxMenu(assetPath, text, color, context) {
@@ -164,7 +213,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                         height: 18,
                         alignment: Alignment.center,
                         child: Text(
-                          '14',
+                          workCounts ?? "0",
                           style: TextStyle(color: Colors.white, fontSize: 12),
                         ),
                       ),
@@ -176,13 +225,45 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               ),
             )));
   }
-}
 
-void _goProcessWork(context) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => WorkList()),
-  );
+  Future<void> _getWorkCounts() async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+    String userId = await storage.read(key: 'userId');
+
+    var busStatus = "CONFIRMED";
+    var queryString = '?bus_reserve_status_id=${busStatus}';
+    var getBusInfoListUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryString}&driver_id=${userId}');
+    var res = await getHttpWithToken(getBusInfoListUrl, token);
+
+    var workCountConverted = jsonDecode(res)['rowCount'] as int;
+
+    setState(() {
+      workCounts = workCountConverted.toString();
+    });
+  }
+
+  void _goProcessWork(context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => WorkList()),
+    ).then((value) async {
+      await _checkInternet();
+    });
+  }
+
+  void _checkInternet() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult == ConnectivityResult.none) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+      );
+    } //
+    else {
+      await _getWorkCounts();
+    }
+  }
 }
 
 void _goHistory(context) {
@@ -204,12 +285,12 @@ void _showDialog(context) {
     pageBuilder: (_, __, ___) {
       return CallDialogBox('097-347-1602');
     },
-    transitionBuilder: (_, anim, __, child) {
+    /*  transitionBuilder: (_, anim, __, child) {
       return SlideTransition(
         position: Tween(begin: Offset(0, 1), end: Offset(0, 0)).animate(anim),
         child: child,
       );
-    },
+    }, */
   );
 }
 

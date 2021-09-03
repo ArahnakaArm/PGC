@@ -6,8 +6,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pgc/model/process.dart';
 import 'package:pgc/responseModel/busJobInfo.dart';
-import 'package:pgc/responseModel/busPoi.dart';
-
 import 'package:pgc/responseModel/routeInfo.dart';
 import 'package:pgc/screens/checkin.dart';
 import 'package:pgc/screens/scanandlist.dart';
@@ -21,16 +19,16 @@ import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/model/histories.dart';
 
-class ProcessWork extends StatefulWidget {
-  const ProcessWork({Key key}) : super(key: key);
+class HistoryInfo extends StatefulWidget {
+  const HistoryInfo({Key key}) : super(key: key);
 
   @override
-  _ProcessWorkState createState() => _ProcessWorkState();
+  _HistoryInfoState createState() => _HistoryInfoState();
 }
 
-class _ProcessWorkState extends State<ProcessWork> {
+class _HistoryInfoState extends State<HistoryInfo> {
   String busJobInfoId = '';
-
+/*   String busJobInfoId = '4286e0d5-0d14-4f09-b73a-1e32bb48e3c0'; */
   String routeId = '';
   List<RoutePoiInfo> routePoi = [];
   var isLoading = true;
@@ -49,11 +47,10 @@ class _ProcessWorkState extends State<ProcessWork> {
       setState(() {
         busJobInfoId = ModalRoute.of(context).settings.arguments;
       });
-      print(busJobInfoId);
     });
     // TODO: implement initState
     _checkInternet();
-
+    _getBusJobInfo();
     super.initState();
   }
 
@@ -96,75 +93,63 @@ class _ProcessWorkState extends State<ProcessWork> {
     ));
   }
 
+  void _checkInternet() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult == ConnectivityResult.none) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+      );
+      setState(() {});
+    } //
+    else {
+      await _getBusJobInfo();
+    }
+  }
+
   Future<void> _getBusJobInfo() async {
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
     String userId = await storage.read(key: 'userId');
     var getBusJobInfoUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO']}/${busJobInfoId}');
-    try {
-      var res = await getHttpWithToken(getBusJobInfoUrl, token);
+    var res = await getHttpWithToken(getBusJobInfoUrl, token);
 
-      BusJobInfo busJobInfo = busJobInfoFromJson(res);
-      routeId = busJobInfo.resultData.routeInfo.routeInfoId;
-      setState(() {
-        tripName = busJobInfo.resultData.docNo;
-        originDestination = busJobInfo.resultData.routeInfo.originRouteNameTh;
-        carPlate = busJobInfo.resultData.carInfo.carPlate;
-        beginMiles = busJobInfo.resultData.carMileageStart;
-        startDate = ChangeFormatDateToTH(busJobInfo.resultData.tripDatetime);
-        tripType = busJobInfo.resultData.routeInfo.tripType;
-        tripStatus = busJobInfo.resultData.busReserveStatusId;
-      });
+    BusJobInfo busJobInfo = busJobInfoFromJson(res);
+    routeId = busJobInfo.resultData.routeInfo.routeInfoId;
+    setState(() {
+      tripName = busJobInfo.resultData.docNo;
+      originDestination = busJobInfo.resultData.routeInfo.originRouteNameTh;
+      carPlate = busJobInfo.resultData.carInfo.carPlate;
+      beginMiles = busJobInfo.resultData.carMileageStart;
+      startDate = ChangeFormatDateToTH(busJobInfo.resultData.tripDatetime);
+      tripType = busJobInfo.resultData.routeInfo.tripType;
+      tripStatus = busJobInfo.resultData.busReserveStatusId;
+    });
 
-      ////////// GET ROUTE ID /////////
+    ////////// GET ROUTE ID /////////
 
-      ///////// END GET ROUTE ID /////////
-      var getRouteInfoUrl = Uri.parse(
-          '${dotenv.env['BASE_API']}${dotenv.env['GET_ROUTE_INFO']}/${routeId}');
+    ///////// END GET ROUTE ID /////////
+    var getRouteInfoUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['GET_ROUTE_INFO']}/${routeId}');
 
-      var routeInfoRes = await getHttpWithToken(getRouteInfoUrl, token);
+    var routeInfoRes = await getHttpWithToken(getRouteInfoUrl, token);
 
-      RouteInfoByPath routeInfo = routeInfoByPathFromJson(routeInfoRes);
+    RouteInfoByPath routeInfo = routeInfoByPathFromJson(routeInfoRes);
 
-      routePoi =
-          (jsonDecode(routeInfoRes)['resultData']['route_poi_info'] as List)
-              .map((i) => RoutePoiInfo.fromJson(i))
-              .toList();
+    routePoi =
+        (jsonDecode(routeInfoRes)['resultData']['route_poi_info'] as List)
+            .map((i) => RoutePoiInfo.fromJson(i))
+            .toList();
+    Comparator<RoutePoiInfo> sortByOrder = (a, b) => a.order.compareTo(b.order);
+    routePoi.sort(sortByOrder);
+    setState(() {
+      routePoi = routePoi.toList();
 
-      Comparator<RoutePoiInfo> sortByOrder =
-          (a, b) => a.order.compareTo(b.order);
-      routePoi.sort(sortByOrder);
-      /*    routePoi.sort(sortByOrder); */
-      for (int i = 0; i < routePoi.length; i++) {
-        var routePoiId = routePoi[i].routePoiInfoId;
-        var queryString =
-            '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${routeId}';
-
-        var busPoiUrl = Uri.parse(
-            '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_POI']}${queryString}');
-
-        var busPoiResObj = await getHttpWithToken(busPoiUrl, token);
-
-        Map<String, dynamic> busPoiRes = jsonDecode(busPoiResObj);
-
-        routePoi[i].status = busPoiRes['resultData'][0]['status'];
-      }
-      setState(() {
-        routePoi = routePoi.toList();
-        /*    routePoi.sort(sortByOrder); */
-        isLoading = false;
-        if (routePoi.length == 0) {
-          isEmpty = true;
-        }
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
-      );
       isLoading = false;
-      isEmpty = true;
-    }
+      if (routePoi.length == 0) {
+        isEmpty = true;
+      }
+    });
   }
 
   Container _workInfoBox(heigth) {
@@ -198,7 +183,7 @@ class _ProcessWorkState extends State<ProcessWork> {
               else if (tripStatus == 'CONFIRMED')
                 _statusBar('รอให้บริการ', Color.fromRGBO(92, 184, 92, 1))
               else if (tripStatus == 'COMPLETED')
-                _statusBar('ให้บริการสำเร็จ', Color.fromRGBO(137, 137, 137, 1))
+                _statusBar('ให้บริการสำเร็จ', Color.fromRGBO(192, 192, 192, 1))
             ],
           ),
           Container(
@@ -271,14 +256,6 @@ class _ProcessWorkState extends State<ProcessWork> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('เลขไมล์เริ่มต้น : ${beginMiles.toString()}'),
-                Container(
-                  margin: EdgeInsets.only(top: 4, left: 5),
-                  child: Image.asset(
-                    'assets/images/pencil.png',
-                    height: 12,
-                    width: 12,
-                  ),
-                ),
               ],
             ),
           ),
@@ -315,38 +292,14 @@ class _ProcessWorkState extends State<ProcessWork> {
   else if (status == 'success') return _successBox(context); */
 
     if (content.order == 0) {
-      if (content.status == 'IDLE') {
-        return _todoBoxFirst(context, content);
-      } else if (content.status == 'CHECKED-IN') {
-        return _waitingBoxFirst(context, content);
-      } else if (content.status == 'FINISHED') {
-        return _finishedBoxFirst(context, content);
-      }
+      return _finishedBoxFirst(context, content);
     } else if (content.order == routePoi.length - 1) {
-      return _successBox(context, content);
+      return _finishedBoxLast(context, content);
     } else {
-      if (content.status == 'IDLE') {
-        return _todoBox(context, content);
-      } else if (content.status == 'CHECKED-IN') {
-        return _waitingBox(context, content);
-      } else if (content.status == 'FINISHED') {
-        return _finishedBox(context, content);
-      }
+      return _finishedBox(context, content);
     }
 
     /*  return _waitingBox(context, content); */
-  }
-
-  void _checkInternet() async {
-    var connectivityResult = await (Connectivity().checkConnectivity());
-    if (connectivityResult == ConnectivityResult.none) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
-      );
-    } //
-    else {
-      await _getBusJobInfo();
-    }
   }
 }
 
@@ -383,6 +336,32 @@ Container _statusBar(text, color) {
   );
 }
 
+GestureDetector _finishedBox(context, content) {
+  return GestureDetector(
+    onTap: () {
+      _goScanAndList(context, 'finished');
+    },
+    child: Container(
+      height: 70,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Column(
+            children: <Widget>[
+              _verticleLine(),
+              _circleImage(10.0, 10.0, 'assets/images/correct.png',
+                  Color.fromRGBO(92, 184, 92, 1)),
+              _verticleLine()
+            ],
+          ),
+          _processInfo(content),
+          _processTime()
+        ],
+      ),
+    ),
+  );
+}
+
 GestureDetector _finishedBoxFirst(context, content) {
   return GestureDetector(
     onTap: () {
@@ -398,7 +377,7 @@ GestureDetector _finishedBoxFirst(context, content) {
               _verticleWhiteLine(),
               _circleImage(10.0, 10.0, 'assets/images/correct.png',
                   Color.fromRGBO(92, 184, 92, 1)),
-              _verticleLine(),
+              _verticleLine()
             ],
           ),
           _processInfo(content),
@@ -421,63 +400,10 @@ GestureDetector _finishedBoxLast(context, content) {
         children: <Widget>[
           Column(
             children: <Widget>[
-              _verticleWhiteLine(),
+              _verticleLine(),
               _circleImage(10.0, 10.0, 'assets/images/correct.png',
                   Color.fromRGBO(92, 184, 92, 1)),
-              _verticleLine()
-            ],
-          ),
-          _processInfo(content),
-          _processTime()
-        ],
-      ),
-    ),
-  );
-}
-
-GestureDetector _finishedBox(context, content) {
-  return GestureDetector(
-    onTap: () {
-      _goScanAndList(context, 'finished');
-    },
-    child: Container(
-      height: 70,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Column(
-            children: <Widget>[
               _verticleWhiteLine(),
-              _circleImage(10.0, 10.0, 'assets/images/correct.png',
-                  Color.fromRGBO(92, 184, 92, 1)),
-              _verticleLine()
-            ],
-          ),
-          _processInfo(content),
-          _processTime()
-        ],
-      ),
-    ),
-  );
-}
-
-GestureDetector _waitingBoxFirst(context, RoutePoiInfo content) {
-  return GestureDetector(
-    behavior: HitTestBehavior.opaque,
-    onTap: () {
-      _goCheckIn(context, 'non-success');
-    },
-    child: Container(
-      height: 70,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Column(
-            children: <Widget>[
-              _verticleWhiteLine(),
-              _circleImage(10.0, 10.0, 'assets/images/hourglass.png',
-                  Color.fromRGBO(92, 184, 92, 1)),
-              _verticleLine()
             ],
           ),
           _processInfo(content),
@@ -515,47 +441,7 @@ GestureDetector _waitingBox(context, RoutePoiInfo content) {
   );
 }
 
-Container _todoBoxFirst(context, content) {
-  return Container(
-    height: 70,
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Column(
-          children: <Widget>[
-            _verticleWhiteLine(),
-            _circleImage(10.0, 10.0, 'assets/images/pin.png', Colors.red),
-            _verticleLine()
-          ],
-        ),
-        _processInfo(content),
-        _processTime()
-      ],
-    ),
-  );
-}
-
-Container _todoBoxLast(context, content) {
-  return Container(
-    height: 70,
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Column(
-          children: <Widget>[
-            _verticleLine(),
-            _circleImage(10.0, 10.0, 'assets/images/pin.png', Colors.red),
-            _verticleWhiteLine()
-          ],
-        ),
-        _processInfo(content),
-        _processTime()
-      ],
-    ),
-  );
-}
-
-Container _todoBox(context, content) {
+Container _todoBox(content) {
   return Container(
     height: 70,
     child: Row(

@@ -540,7 +540,7 @@ Container _arrivedPassengerListPage(passengers) {
 GestureDetector _endScanButton(context, status) {
   return GestureDetector(
     onTap: () {
-      /* _goConfirmFinishJob(context, status); */
+      _goConfirmFinishJob(context, status);
       /*   _showDialog(context); */
       /*     _showDialogError(context); */
       /*  _showDialogSuccess(context); */

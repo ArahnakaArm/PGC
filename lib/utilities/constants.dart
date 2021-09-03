@@ -16,9 +16,21 @@ final loginLabelStyle = TextStyle(
   fontFamily: 'Athiti',
 );
 
+final loginLabelSmallStyle = TextStyle(
+    color: Color.fromRGBO(228, 228, 228, 1),
+    fontFamily: 'Athiti',
+    fontSize: 12);
+
 final loginHintTextStyle = TextStyle(
   fontFamily: 'Athiti',
 );
+
+final notFoundText = TextStyle(fontFamily: 'Athiti', fontSize: 25);
+
+final notInternetText =
+    TextStyle(fontFamily: 'Athiti', fontSize: 20, color: Colors.white);
+
+final loadingText = TextStyle(fontFamily: 'Athiti', fontSize: 25);
 
 final callDialogTextStyle = TextStyle(
     fontFamily: 'Prompt',
@@ -26,7 +38,7 @@ final callDialogTextStyle = TextStyle(
     height: 1.1,
     fontWeight: FontWeight.normal,
     color: Colors.black,
-    fontSize: 22,
+    fontSize: 20,
     decoration: TextDecoration.none);
 
 final callDialogBlackTextStyle = TextStyle(
@@ -34,7 +46,7 @@ final callDialogBlackTextStyle = TextStyle(
     letterSpacing: 0.2,
     fontWeight: FontWeight.normal,
     color: Colors.black,
-    fontSize: 22,
+    fontSize: 20,
     decoration: TextDecoration.none);
 
 final callDialogBlueTextStyle = TextStyle(
@@ -42,7 +54,7 @@ final callDialogBlueTextStyle = TextStyle(
     letterSpacing: 0.2,
     fontWeight: FontWeight.normal,
     color: Color.fromRGBO(2, 117, 216, 1),
-    fontSize: 22,
+    fontSize: 20,
     decoration: TextDecoration.none);
 
 final callDialogRedTextStyle = TextStyle(
@@ -50,7 +62,7 @@ final callDialogRedTextStyle = TextStyle(
     letterSpacing: 0.2,
     fontWeight: FontWeight.normal,
     color: Colors.red,
-    fontSize: 22,
+    fontSize: 20,
     decoration: TextDecoration.none);
 
 final callDialogGreenTextStyle = TextStyle(
@@ -58,7 +70,7 @@ final callDialogGreenTextStyle = TextStyle(
     letterSpacing: 0.2,
     fontWeight: FontWeight.normal,
     color: Color.fromRGBO(92, 184, 92, 1),
-    fontSize: 22,
+    fontSize: 20,
     decoration: TextDecoration.none);
 
 final buttonDialogTextStyle = TextStyle(
@@ -145,14 +157,14 @@ final statusBarTextStyle = TextStyle(
 final workInfoFirstTextStyle = TextStyle(
   fontFamily: 'Athiti',
   color: Color.fromRGBO(92, 184, 92, 1),
-  fontSize: 16,
+  fontSize: 13,
   height: 1.2,
 );
 
 final workInfoTextStyle = TextStyle(
   fontFamily: 'Athiti',
   color: Colors.black,
-  fontSize: 16,
+  fontSize: 13,
   height: 1.2,
 );
 
@@ -189,7 +201,7 @@ final commonSmallCheckinBoxTextStyle = TextStyle(
     color: Colors.black, fontSize: 14, fontFamily: 'Athiti', height: 1.1);
 
 final jobTitleProcessWordTextStyle = TextStyle(
-    color: Colors.black, fontSize: 16, fontFamily: 'Athiti', height: 1.2);
+    color: Colors.black, fontSize: 14, fontFamily: 'Athiti', height: 1.2);
 
 final successTextStyle =
     TextStyle(color: Colors.black, fontSize: 25, fontFamily: 'Athiti');

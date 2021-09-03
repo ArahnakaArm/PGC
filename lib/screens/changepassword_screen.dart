@@ -54,7 +54,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                               horizontal: 6.0,
                             ),
                             child: Text(
-                              'รหัสผ่านเดิม',
+                              'รหัสผ่านปัจจุบัน',
                               style: loginLabelStyle,
                             ),
                           ),
@@ -95,6 +95,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             child: Text(
                               'รหัสผ่านใหม่',
                               style: loginLabelStyle,
+                            ),
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6.0,
+                            ),
+                            child: Text(
+                              'โปรดกรอกรหัสผ่านอย่างน้อย 6 หลัก',
+                              style: loginLabelSmallStyle,
                             ),
                           ),
                           SizedBox(height: 10.0),
@@ -216,13 +225,22 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   void _changePasswordValidate(oldPass, newPass, confirmNewPass, ctx) async {
     FocusScope.of(context).unfocus();
-    bool newPasswordValid =
-        RegExp(r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9]).{6,}$')
-            .hasMatch(newPass);
 
-    bool confirmNewPasswordValid =
-        RegExp(r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9]).{6,}$')
-            .hasMatch(confirmNewPass);
+    bool newPasswordValid;
+
+    if (newPass.toString().length < 6) {
+      newPasswordValid = false;
+    } else {
+      newPasswordValid = true;
+    }
+
+    bool confirmNewPasswordValid;
+
+    if (confirmNewPass.toString().length < 6) {
+      confirmNewPasswordValid = false;
+    } else {
+      confirmNewPasswordValid = true;
+    }
 
     if (newPass != confirmNewPass) {
       popped('กรุณากรอกรหัสผ่านใหม่และยืนยันรหัสผ่านใหม่ให้เหมือนกัน', ctx);
@@ -242,32 +260,37 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final storage = new FlutterSecureStorage();
     String userId = await storage.read(key: 'userId');
     String token = await storage.read(key: 'token');
+    try {
+      var changePasswordId = ("${dotenv.env['POST_CHANGE_PASSWORD_PATH']}")
+          .replaceFirst('userid', userId);
+      var changePasswordUrl =
+          Uri.parse('${dotenv.env['BASE_API']}${changePasswordId}');
+      var changePassBody = {"oldPassword": oldPass, "newPassword": newPass};
 
-    var changePasswordId = ("${dotenv.env['POST_CHANGE_PASSWORD_PATH']}")
-        .replaceFirst('userid', userId);
-    var changePasswordUrl =
-        Uri.parse('${dotenv.env['BASE_API']}${changePasswordId}');
-    var changePassBody = {"oldPassword": oldPass, "newPassword": newPass};
+      /*  EasyLoading.show(status: 'loading...'); */
+      var res =
+          await putHttpWithToken(changePasswordUrl, token, changePassBody);
 
-    /*  EasyLoading.show(status: 'loading...'); */
-    var res = await postHttpWithToken(changePasswordUrl, token, changePassBody);
-
-    Map<String, dynamic> resObj = jsonDecode(res);
-    if (resObj['resultCode'] == '40900') {
-      /*    EasyLoading.showError('รหัสผ่านเดิมไม่ถูกต้อง'); */
-      popped('รหัสผ่านเดิมไม่ถูกต้อง', ctx);
-      _btnController.reset();
-    } else if (resObj['resultCode'] == '20000') {
+      Map<String, dynamic> resObj = jsonDecode(res);
+      if (resObj['resultCode'] == '40900') {
+        /*    EasyLoading.showError('รหัสผ่านเดิมไม่ถูกต้อง'); */
+        popped('กรุณากรอกรหัสผ่านเดิมให้ถูกต้อง', ctx);
+        _btnController.reset();
+      } else if (resObj['resultCode'] == '20000') {
 /*       EasyLoading.showSuccess('สำเร็จ! ระบบได้บันทึกข้อมูลแล้ว'); */
-      popped('สำเร็จ! ระบบได้บันทึกข้อมูลแล้ว', ctx);
+        popped('สำเร็จ! ระบบได้บันทึกข้อมูลแล้ว', ctx);
 
-      _btnController.success();
-      Timer(Duration(seconds: 1), () {
-        _destroyActivity(ctx);
-      });
-    } else {
-      EasyLoading.showError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
-      popped('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', ctx);
+        _btnController.success();
+        Timer(Duration(seconds: 1), () {
+          _destroyActivity(ctx);
+        });
+      } else {
+        EasyLoading.showError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+        popped('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', ctx);
+        _btnController.reset();
+      }
+    } catch (e) {
+      popped('${dotenv.env['NO_INTERNET_CONNECTION']}', ctx);
       _btnController.reset();
     }
   }

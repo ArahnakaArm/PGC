@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:pgc/responseModel/user.dart';
 import 'package:pgc/screens/login_screen.dart';
 import 'package:pgc/screens/mainmenu_screen.dart';
+import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -15,11 +17,12 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with WidgetsBindingObserver {
+  User user;
   @override
   void initState() {
     // TODO: implement initState
     WidgetsBinding.instance.addObserver(this);
-    print('create');
+
     _checkToken();
     super.initState();
   }
@@ -102,12 +105,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _goMainMenu() {
-    Timer(
-        Duration(seconds: 2),
-        () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => MainMenuScreen()),
-            ));
+    _getProfile();
   }
 
   void _checkToken() async {
@@ -119,6 +117,43 @@ class _SplashScreenState extends State<SplashScreen>
       _goLogin();
     } else {
       _goMainMenu();
+    }
+  }
+
+  Future<void> _getProfile() async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+    var getUserByMeUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
+
+    try {
+      var res = await getHttpWithToken(
+        getUserByMeUrl,
+        token,
+      );
+
+      user = userFromJson(res) ?? '';
+      await storage.write(key: 'userId', value: user.resultData.userId);
+      await storage.write(
+          key: 'profileUrl', value: user.resultData.imageProfileFile);
+      await storage.write(key: 'firstName', value: user.resultData.firstnameTh);
+      await storage.write(key: 'lastName', value: user.resultData.lastnameTh);
+      await storage.write(
+          key: 'department',
+          value:
+              user.resultData.empInfo.empDepartmentInfo.empDepartmentNameTh ??
+                  "");
+
+      Timer(
+          Duration(seconds: 2),
+          () => Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => MainMenuScreen()),
+              ));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+      );
     }
   }
 }

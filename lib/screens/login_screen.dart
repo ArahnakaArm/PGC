@@ -212,82 +212,96 @@ class _LogInScreenState extends State<LogInScreen> {
     ///////////// AUTH /////////////////
     var authUrl =
         Uri.parse('${dotenv.env['BASE_API']}${dotenv.env['AUTH_USER_PATH']}');
+    try {
+      var authRes =
+          await postHttp(authUrl, {"email": username, "password": pass});
 
-    var authRes =
-        await postHttp(authUrl, {"email": username, "password": pass});
-
-    Map<String, dynamic> authResObj = jsonDecode(authRes);
-
-    ///////////// END AUTH /////////////////
-
-    if (authResObj['resultCode'] == '40101' ||
-        authResObj['resultCode'] == '40000') {
-      /* EasyLoading.showError(
-          'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หากจำไม่ได้โปรดติดต่อผู้ดูแลระบบ'); */
-      popped(
-          'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หากจำไม่ได้โปรดติดต่อผู้ดูแลระบบ',
-          ctx);
-      _btnController.reset();
-    } else if (authResObj['resultCode'] == '20000') {
-      /////////////// GET_USER_BY_ME //////////////
       Map<String, dynamic> authResObj = jsonDecode(authRes);
-      var token = authResObj['resultData']['access_token'];
 
-      var getUserByMeUrl = Uri.parse(
-          '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
+      ///////////// END AUTH /////////////////
 
-      var userByMeRes = await getHttpWithToken(getUserByMeUrl, token);
+      if (authResObj['resultCode'] == '40101' ||
+          authResObj['resultCode'] == '40000') {
+        /* EasyLoading.showError(
+          'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หากจำไม่ได้โปรดติดต่อผู้ดูแลระบบ'); */
+        popped(
+            'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หากจำไม่ได้โปรดติดต่อผู้ดูแลระบบ',
+            ctx);
+        _btnController.reset();
+      } else if (authResObj['resultCode'] == '20000') {
+        /////////////// GET_USER_BY_ME //////////////
+        Map<String, dynamic> authResObj = jsonDecode(authRes);
+        var token = authResObj['resultData']['access_token'];
 
-      Map<String, dynamic> getUserByMeResObj = jsonDecode(userByMeRes);
+        var getUserByMeUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
 
-      /////////////// END GET_USER_BY_ME //////////////
+        var userByMeRes = await getHttpWithToken(getUserByMeUrl, token);
 
-      /////////////// GET_USER_PERMISSION //////////////
-      var userId = getUserByMeResObj['resultData']['user_id'];
+        Map<String, dynamic> getUserByMeResObj = jsonDecode(userByMeRes);
 
-      var getUserPermissionUrl = Uri.parse(
-          '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_PERMISSION_PATH']}?user_id=${userId}');
+        /////////////// END GET_USER_BY_ME //////////////
 
-      var getUserPermissionRes =
-          await getHttpWithToken(getUserPermissionUrl, token);
+        /////////////// GET_USER_PERMISSION //////////////
+        var userId = getUserByMeResObj['resultData']['user_id'];
+        var profileImageUrl =
+            getUserByMeResObj['resultData']['image_profile_file'];
+        var firstName = getUserByMeResObj['resultData']['firstname_th'];
+        var lastName = getUserByMeResObj['resultData']['lastname_th'];
+        var department = getUserByMeResObj['resultData']['emp_info']
+            ['emp_department_info']['emp_department_name_th'];
 
-      Map<String, dynamic> getUserPermissionObj =
-          jsonDecode(getUserPermissionRes);
+        var getUserPermissionUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_PERMISSION_PATH']}?user_id=${userId}');
 
-      var userPermissionId = getUserPermissionObj['resultData'][0]
-          ['permission_info']['permission_id'];
+        var getUserPermissionRes =
+            await getHttpWithToken(getUserPermissionUrl, token);
 
-      var userPermissionRoleId = getUserPermissionObj['resultData'][0]
-          ['permission_role_info']['permission_role_id'];
+        Map<String, dynamic> getUserPermissionObj =
+            jsonDecode(getUserPermissionRes);
 
-      /////////////// END GET_USER_PERMISSION //////////////
+        var userPermissionId = getUserPermissionObj['resultData'][0]
+            ['permission_info']['permission_id'];
 
-      if (getUserByMeResObj['resultData']['user_state_id'] != 'ACTIVE') {
-        /*  EasyLoading.showError('บัญชีของของท่านถูกระงับ โปรดติดต่อผู้ดูแลระบบ'); */
+        var userPermissionRoleId = getUserPermissionObj['resultData'][0]
+            ['permission_role_info']['permission_role_id'];
+
+        /////////////// END GET_USER_PERMISSION //////////////
+
+        if (getUserByMeResObj['resultData']['user_state_id'] != 'ACTIVE') {
+          /*  EasyLoading.showError('บัญชีของของท่านถูกระงับ โปรดติดต่อผู้ดูแลระบบ'); */
+          popped('บัญชีของของท่านถูกระงับ โปรดติดต่อผู้ดูแลระบบ', ctx);
+          _btnController.reset();
+        } else if (userPermissionId != 'BUS_BOOKING_SYS' ||
+            userPermissionRoleId != 'BUS_BOOKING_SYS:DRIVER') {
+          /*   EasyLoading.showError(
+            'บัญชีของท่านไม่มีสิทธิ์การใช้งาน โปรดติดต่อผู้ดูแลระบบ'); */
+          popped('บัญชีของท่านไม่มีสิทธิ์การใช้งาน โปรดติดต่อผู้ดูแลระบบ', ctx);
+          _btnController.reset();
+        } else {
+          final storage = new FlutterSecureStorage();
+          await storage.write(key: 'token', value: token);
+          await storage.write(key: 'userId', value: userId);
+          await storage.write(key: 'profileUrl', value: profileImageUrl ?? "");
+          await storage.write(key: 'firstName', value: firstName);
+          await storage.write(key: 'lastName', value: lastName);
+          await storage.write(key: 'department', value: department);
+          _btnController.success();
+          Timer(Duration(seconds: 1), () {
+            _completeLogin(ctx);
+          });
+        }
+      } else if (authResObj['resultCode'] == '40302') {
+        /*   EasyLoading.showError('บัญชีของของท่านถูกระงับ โปรดติดต่อผู้ดูแลระบบ'); */
         popped('บัญชีของของท่านถูกระงับ โปรดติดต่อผู้ดูแลระบบ', ctx);
         _btnController.reset();
-      } else if (userPermissionId != 'BUS_BOOKING_SYS' ||
-          userPermissionRoleId != 'BUS_BOOKING_SYS:DRIVER') {
-        /*   EasyLoading.showError(
-            'บัญชีของท่านไม่มีสิทธิ์การใช้งาน โปรดติดต่อผู้ดูแลระบบ'); */
-        popped('บัญชีของท่านไม่มีสิทธิ์การใช้งาน โปรดติดต่อผู้ดูแลระบบ', ctx);
-        _btnController.reset();
       } else {
-        final storage = new FlutterSecureStorage();
-        await storage.write(key: 'token', value: token);
-        await storage.write(key: 'userId', value: userId);
-        _btnController.success();
-        Timer(Duration(seconds: 1), () {
-          _completeLogin(ctx);
-        });
+        /*    EasyLoading.showError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'); */
+        popped('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', ctx);
+        _btnController.reset();
       }
-    } else if (authResObj['resultCode'] == '40302') {
-      /*   EasyLoading.showError('บัญชีของของท่านถูกระงับ โปรดติดต่อผู้ดูแลระบบ'); */
-      popped('บัญชีของของท่านถูกระงับ โปรดติดต่อผู้ดูแลระบบ', ctx);
-      _btnController.reset();
-    } else {
-      /*    EasyLoading.showError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'); */
-      popped('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', ctx);
+    } catch (e) {
+      popped('${dotenv.env['NO_INTERNET_CONNECTION']}', ctx);
       _btnController.reset();
     }
   }
