@@ -1,4 +1,4 @@
-package com.example.gps_tracking_flutter
+package com.example.PGC
 
 import io.flutter.embedding.android.FlutterActivity
 

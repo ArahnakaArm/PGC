@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:pgc/utilities/constants.dart';
 
 class CommonSmallProcessBackground extends StatelessWidget {
+  String locationName;
+  String checkinTime;
+  String status;
+  int passengerMaxCount;
+  int passengerCounts;
+
+  CommonSmallProcessBackground(this.locationName, this.checkinTime, this.status,
+      this.passengerMaxCount, this.passengerCounts);
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -13,18 +21,14 @@ class CommonSmallProcessBackground extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          Container(
-            width: 37.5,
-            height: 37.5,
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration:
-                BoxDecoration(color: Colors.green, shape: BoxShape.circle),
-            child: Container(
-              child: Image.asset(
-                'assets/images/hourglass.png',
-              ),
-            ),
-          ),
+          if (this.status == "CHECKED-IN")
+            _symbolInProgress()
+          else if (this.status == "FINISHED")
+            _symbolFinished()
+          else if (this.status == "IDLE")
+            _symbolIdle()
+          else
+            _symbol(),
           SizedBox(
             width: 10,
           ),
@@ -33,14 +37,15 @@ class CommonSmallProcessBackground extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Location',
+              Text('${this.locationName}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: commonSmallCheckinBoxTextStyle),
               SizedBox(
                 height: 3,
               ),
-              Text('Status',
+              Text(
+                  'รับแล้ว ${this.passengerCounts} คน จาก ${this.passengerMaxCount} คน',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: commonSmallCheckinBoxTextStyle)
@@ -54,7 +59,7 @@ class CommonSmallProcessBackground extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
-                'Checkin :',
+                'Checkin ${this.checkinTime}',
                 style: checkinTimeTextStyle,
               ),
               SizedBox(height: 3),
@@ -63,6 +68,57 @@ class CommonSmallProcessBackground extends StatelessWidget {
           )
         ],
       ),
+    );
+  }
+
+  Container _symbolInProgress() {
+    return Container(
+      width: 37.5,
+      height: 37.5,
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+      child: Container(
+        child: Image.asset(
+          'assets/images/hourglass.png',
+        ),
+      ),
+    );
+  }
+
+  Container _symbolFinished() {
+    return Container(
+      width: 37.5,
+      height: 37.5,
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+      child: Container(
+        child: Image.asset(
+          'assets/images/correct.png',
+        ),
+      ),
+    );
+  }
+
+  Container _symbolIdle() {
+    return Container(
+      width: 37.5,
+      height: 37.5,
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+      child: Container(
+        child: Image.asset(
+          'assets/images/hourglass.png',
+        ),
+      ),
+    );
+  }
+
+  Container _symbol() {
+    return Container(
+      width: 37.5,
+      height: 37.5,
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
     );
   }
 }

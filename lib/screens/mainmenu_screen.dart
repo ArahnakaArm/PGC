@@ -3,11 +3,14 @@ import 'dart:io';
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:pgc/responseModel/buslistinfo.dart';
 import 'package:pgc/responseModel/user.dart';
 import 'package:pgc/screens/history.dart';
+import 'package:pgc/screens/unity/message.dart';
 import 'package:pgc/screens/worklist.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/utils/common.dart';
@@ -17,6 +20,7 @@ import 'package:badges/badges.dart';
 import 'package:pgc/widgets/dialogbox/callDialogBox.dart';
 import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class MainMenuScreen extends StatefulWidget {
   @override
@@ -24,6 +28,12 @@ class MainMenuScreen extends StatefulWidget {
 }
 
 class _MainMenuScreenState extends State<MainMenuScreen> {
+  AndroidNotificationChannel channel;
+
+  /// Initialize the [FlutterLocalNotificationsPlugin] package.
+  FlutterLocalNotificationsPlugin localNotification;
+  String _tokenNoti;
+  Stream<String> _tokenStream;
   DateTime current;
   User user;
   BusListInfo busListInfo;
@@ -58,16 +68,61 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     }
   }
 
+  Future _showNotification(title, body) async {
+    var androidDetails = new AndroidNotificationDetails(
+        "channelId", "channelName", "channelDescription",
+        importance: Importance.high);
+
+    var iosDetails = new IOSNotificationDetails();
+    var generalNotificationDetails =
+        new NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await localNotification.show(0, title, body, generalNotificationDetails);
+  }
+
   @override
   void initState() {
+    var androidInitialize = new AndroidInitializationSettings('ic_launcher');
+    var iOSInitialize = new IOSInitializationSettings();
+    var initialzationSettings = new InitializationSettings(
+        android: androidInitialize, iOS: iOSInitialize);
+
+    localNotification = new FlutterLocalNotificationsPlugin();
+
+    localNotification.initialize(initialzationSettings);
     // TODO: implement initState
     _checkInternet();
     /*    if (isConnect) {
       _getWorkCounts();
     }
  */
+    FirebaseMessaging.instance
+        .getInitialMessage()
+        .then((RemoteMessage message) {
+      if (message != null) {}
+    });
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      RemoteNotification notification = message.notification;
+      print(notification.title);
+      print(notification.body);
+      await _showNotification(notification.title, notification.body);
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('A new onMessageOpenedApp event was published!');
+      Navigator.pushNamed(context, '/message',
+          arguments: MessageArguments(message, true));
+    });
     super.initState();
     /*   _getProfile(); */
+  }
+
+  void setToken(String token) {
+    print('FCM Token: $token');
+    setState(() {
+      _tokenNoti = token;
+    });
   }
 
   @override
@@ -261,10 +316,20 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
       );
     } //
     else {
+      FirebaseMessaging.instance.getToken().then(setToken);
+      _tokenStream = FirebaseMessaging.instance.onTokenRefresh;
+      _tokenStream.listen(setToken);
+
+      if (await Permission.notification.request().isGranted) {
+        _sendNotiToken(_tokenNoti);
+      } else {}
+
       await _getWorkCounts();
     }
   }
 }
+
+Future<void> _sendNotiToken(notiToken) async {}
 
 void _goHistory(context) {
   Navigator.push(

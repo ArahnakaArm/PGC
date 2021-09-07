@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1089397576794",
+    "project_id": "test-pgc-81253",
+    "storage_bucket": "test-pgc-81253.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089397576794:android:ff2aea6b76d877bab57463",
+        "android_client_info": {
+          "package_name": "com.example.PGC"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1089397576794-bbc5ri8tembqbgvu9l1vi2qkec2lvi2a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdAsWsI9ZpAE8culZiW8zA5h1ji-QhP4Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1089397576794-bbc5ri8tembqbgvu9l1vi2qkec2lvi2a.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

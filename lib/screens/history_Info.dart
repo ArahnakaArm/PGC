@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pgc/model/process.dart';
 import 'package:pgc/responseModel/busJobInfo.dart';
+import 'package:pgc/responseModel/busRef.dart';
 import 'package:pgc/responseModel/routeInfo.dart';
 import 'package:pgc/screens/checkin.dart';
 import 'package:pgc/screens/scanandlist.dart';
@@ -28,7 +29,7 @@ class HistoryInfo extends StatefulWidget {
 
 class _HistoryInfoState extends State<HistoryInfo> {
   String busJobInfoId = '';
-/*   String busJobInfoId = '4286e0d5-0d14-4f09-b73a-1e32bb48e3c0'; */
+  BusRef busRef;
   String routeId = '';
   List<RoutePoiInfo> routePoi = [];
   var isLoading = true;
@@ -40,6 +41,10 @@ class _HistoryInfoState extends State<HistoryInfo> {
   var startDate = '';
   var tripType = '';
   var tripStatus = '';
+  var currentBusJobInfoId = '';
+  var currentRouteInfoId = '';
+  var currentRoutePoiId = '';
+  var currentBusReserveInfoId = '';
 
   @override
   void initState() {
@@ -50,7 +55,7 @@ class _HistoryInfoState extends State<HistoryInfo> {
     });
     // TODO: implement initState
     _checkInternet();
-    _getBusJobInfo();
+    /*   _getBusJobInfo(); */
     super.initState();
   }
 
@@ -107,49 +112,146 @@ class _HistoryInfoState extends State<HistoryInfo> {
   }
 
   Future<void> _getBusJobInfo() async {
+    setState(() {
+      isLoading = true;
+    });
+
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
     String userId = await storage.read(key: 'userId');
     var getBusJobInfoUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO']}/${busJobInfoId}');
-    var res = await getHttpWithToken(getBusJobInfoUrl, token);
 
-    BusJobInfo busJobInfo = busJobInfoFromJson(res);
-    routeId = busJobInfo.resultData.routeInfo.routeInfoId;
-    setState(() {
-      tripName = busJobInfo.resultData.docNo;
-      originDestination = busJobInfo.resultData.routeInfo.originRouteNameTh;
-      carPlate = busJobInfo.resultData.carInfo.carPlate;
-      beginMiles = busJobInfo.resultData.carMileageStart;
-      startDate = ChangeFormatDateToTH(busJobInfo.resultData.tripDatetime);
-      tripType = busJobInfo.resultData.routeInfo.tripType;
-      tripStatus = busJobInfo.resultData.busReserveStatusId;
-    });
+    try {
+      var res = await getHttpWithToken(getBusJobInfoUrl, token);
 
-    ////////// GET ROUTE ID /////////
+      BusJobInfo busJobInfo = busJobInfoFromJson(res);
+      routeId = busJobInfo.resultData.routeInfo.routeInfoId;
 
-    ///////// END GET ROUTE ID /////////
-    var getRouteInfoUrl = Uri.parse(
-        '${dotenv.env['BASE_API']}${dotenv.env['GET_ROUTE_INFO']}/${routeId}');
+      setState(() {
+        tripName = busJobInfo.resultData.docNo;
+        originDestination = busJobInfo.resultData.routeInfo.originRouteNameTh;
+        carPlate = busJobInfo.resultData.carInfo.carPlate;
+        beginMiles = busJobInfo.resultData.carMileageStart;
+        startDate = ChangeFormatDateToTH(busJobInfo.resultData.tripDatetime);
+        tripType = busJobInfo.resultData.routeInfo.tripType;
+        tripStatus = busJobInfo.resultData.busReserveStatusId;
+      });
 
-    var routeInfoRes = await getHttpWithToken(getRouteInfoUrl, token);
+      //////// GET REF ///////
+      var queryString = '?bus_job_info_id=${busJobInfoId}';
 
-    RouteInfoByPath routeInfo = routeInfoByPathFromJson(routeInfoRes);
+      var busRefUrl = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['GET_REF_BUS_JOB_RESERVE']}${queryString}');
 
-    routePoi =
-        (jsonDecode(routeInfoRes)['resultData']['route_poi_info'] as List)
-            .map((i) => RoutePoiInfo.fromJson(i))
-            .toList();
-    Comparator<RoutePoiInfo> sortByOrder = (a, b) => a.order.compareTo(b.order);
-    routePoi.sort(sortByOrder);
-    setState(() {
-      routePoi = routePoi.toList();
+      var busRefRes = await getHttpWithToken(busRefUrl, token);
+
+      busRef = busRefFromJson(busRefRes);
+
+      currentBusReserveInfoId = busRef.resultData[0].busReserveInfoId;
+
+      //////// END GET REF /////
+
+      ////////// GET ROUTE ID /////////
+
+      ///////// END GET ROUTE ID /////////
+      var getRouteInfoUrl = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['GET_ROUTE_INFO']}/${routeId}');
+
+      var routeInfoRes = await getHttpWithToken(getRouteInfoUrl, token);
+
+      RouteInfoByPath routeInfo = routeInfoByPathFromJson(routeInfoRes);
+
+      routePoi =
+          (jsonDecode(routeInfoRes)['resultData']['route_poi_info'] as List)
+              .map((i) => RoutePoiInfo.fromJson(i))
+              .toList();
+
+      Comparator<RoutePoiInfo> sortByOrder =
+          (a, b) => a.order.compareTo(b.order);
+      routePoi.sort(sortByOrder);
+      /*    routePoi.sort(sortByOrder); */
+      for (int i = 0; i < routePoi.length; i++) {
+        var routePoiId = routePoi[i].routePoiInfoId;
+        var queryString =
+            '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${routeId}';
+
+        var busPoiUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_POI']}${queryString}');
+
+        var busPoiResObj = await getHttpWithToken(busPoiUrl, token);
+
+        Map<String, dynamic> busPoiRes = jsonDecode(busPoiResObj);
+
+        routePoi[i].status = busPoiRes['resultData'][0]['status'];
+        if (busPoiRes['resultData'][0]['checkin_datetime'].toString() ==
+            "0001-01-01T00:00:00.000Z") {
+          routePoi[i].checkInTime = "";
+        } else {
+          routePoi[i].checkInTime = ChangeFormateDateTimeToTime(
+              busPoiRes['resultData'][0]['checkin_datetime'].toString());
+        }
+
+        var queryStringPassengerCount =
+            '?bus_reserve_info_id=${currentBusReserveInfoId}&route_poi_info_id=${routePoiId}';
+
+        var busPoiPassengerCountUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['GET_PASSENGER_COUNT']}${queryStringPassengerCount}');
+
+        /*  print("RESPONSE WITH HTTP " + busPoiPassengerCountUrl.toString());
+ */
+        var busPoiPassengerCountResObj =
+            await getHttpWithToken(busPoiPassengerCountUrl, token);
+
+        Map<String, dynamic> busPoiPassengerCountRes =
+            jsonDecode(busPoiPassengerCountResObj);
+
+        if (busPoiPassengerCountRes['resultData'].length != 0) {
+          print("RESPONSE WITH HTTP " +
+              busPoiPassengerCountRes['resultData'][0]['route_poi_info_count']
+                  .toString());
+          routePoi[i].passengerCount = busPoiPassengerCountRes['resultData'] !=
+                  []
+              ? busPoiPassengerCountRes['resultData'][0]['route_poi_info_count']
+              : 0;
+        } else {
+          routePoi[i].passengerCount = 0;
+        }
+
+        var statusgUsedPassenger = "USED";
+        var queryStringUsedPassenger =
+            '?route_poi_info_id=${routePoiId}&passenger_status_id=${statusgUsedPassenger}';
+        var getPassengerListUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['GET_USED_PASSENGER_LIST']}${queryStringUsedPassenger}');
+
+        var resUsedPassenger =
+            await getHttpWithToken(getPassengerListUrl, token);
+
+        routePoi[i].passengerCountUsed =
+            (jsonDecode(resUsedPassenger)['rowCount'] as int);
+      }
+      currentBusJobInfoId = busJobInfoId;
+      currentRouteInfoId = routeId;
+
+      setState(() {
+        routePoi = routePoi.toList();
+        /*    routePoi.sort(sortByOrder); */
+        isLoading = false;
+        if (routePoi.length == 0) {
+          isEmpty = true;
+        }
+      });
+    } catch (e) {
+      print("RESPONSE WITH HTTP " + e.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+        );
+      }
 
       isLoading = false;
-      if (routePoi.length == 0) {
-        isEmpty = true;
-      }
-    });
+      isEmpty = true;
+    }
   }
 
   Container _workInfoBox(heigth) {
@@ -355,7 +457,7 @@ GestureDetector _finishedBox(context, content) {
             ],
           ),
           _processInfo(content),
-          _processTime()
+          _processTime(content.checkInTime)
         ],
       ),
     ),
@@ -381,7 +483,7 @@ GestureDetector _finishedBoxFirst(context, content) {
             ],
           ),
           _processInfo(content),
-          _processTime()
+          _processTime(content.checkInTime)
         ],
       ),
     ),
@@ -406,8 +508,7 @@ GestureDetector _finishedBoxLast(context, content) {
               _verticleWhiteLine(),
             ],
           ),
-          _processInfo(content),
-          _processTime()
+          _processInfoFinish(content),
         ],
       ),
     ),
@@ -434,7 +535,7 @@ GestureDetector _waitingBox(context, RoutePoiInfo content) {
             ],
           ),
           _processInfo(content),
-          _processTime()
+          _processTime(content.checkInTime)
         ],
       ),
     ),
@@ -455,7 +556,7 @@ Container _todoBox(content) {
           ],
         ),
         _processInfo(content),
-        _processTime()
+        _processTime(content.checkInTime)
       ],
     ),
   );
@@ -479,7 +580,7 @@ GestureDetector _successBox(context, content) {
             ],
           ),
           _processInfo(content),
-          _processTime()
+          _processTime(content.checkInTime)
         ],
       ),
     ),
@@ -532,7 +633,7 @@ Expanded _processInfo(RoutePoiInfo content) {
           maxLines: 1,
         ),
         Text(
-          'รับ 0 คน จาก 0 คน',
+          'รับ ${content.passengerCountUsed} คน จาก ${content.passengerCount} คน',
           style: processBoxSubHeaderTextStyle,
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
@@ -542,11 +643,29 @@ Expanded _processInfo(RoutePoiInfo content) {
   ));
 }
 
-Container _processTime() {
+Expanded _processInfoFinish(RoutePoiInfo content) {
+  return Expanded(
+      child: Container(
+    padding: EdgeInsets.only(left: 10, top: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          content.locationNameTh ?? '',
+          style: processBoxHeaderTextStyle,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
+      ],
+    ),
+  ));
+}
+
+Container _processTime(time) {
   return Container(
     padding: EdgeInsets.only(top: 16),
     child: Text(
-      'Checkin: TEST',
+      time != "00:00" ? 'Checkin: ${time}' : "",
       style: timeTextStyle,
     ),
   );

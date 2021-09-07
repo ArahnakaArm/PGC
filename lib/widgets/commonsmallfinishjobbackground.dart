@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:pgc/utilities/constants.dart';
 
 class CommonSmallFinishJobBackground extends StatelessWidget {
+  String originLocation = '';
+  String destinationLocation = '';
+  CommonSmallFinishJobBackground(this.originLocation, this.destinationLocation);
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -32,12 +35,12 @@ class CommonSmallFinishJobBackground extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Text('ต้นทาง',
+              Text(originLocation == null ? "" : originLocation,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: commonSmallCheckinBoxTextStyle),
               SizedBox(height: 3),
-              Text('ปลายทาง',
+              Text(destinationLocation == null ? "" : destinationLocation,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: commonSmallCheckinBoxTextStyle)

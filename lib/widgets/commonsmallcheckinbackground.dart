@@ -4,8 +4,9 @@ import 'package:pgc/utilities/constants.dart';
 
 class CommonSmallCheckInBackground extends StatelessWidget {
   final BuildContext ctx;
+  String locationName;
 
-  CommonSmallCheckInBackground(this.ctx);
+  CommonSmallCheckInBackground(this.ctx, this.locationName);
 
   @override
   Widget build(BuildContext context) {
@@ -38,14 +39,14 @@ class CommonSmallCheckInBackground extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
-                'Location',
+                '${this.locationName}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: commonSmallCheckinBoxTextStyle,
               ),
               SizedBox(height: 3),
               Text(
-                'Status',
+                'รับ 0 คน จาก 8 คน',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: commonSmallCheckinBoxTextStyle,

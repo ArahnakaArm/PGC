@@ -178,7 +178,13 @@ class ConfirmWorkDialogBox extends StatelessWidget {
   }
 
   void _goProgess(context) async {
-    await _updateBus(context);
+    if (milesController.text != "") {
+      await _updateBus(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('กรุณากรอกเลขไมล์')),
+      );
+    }
   }
 
   Future<void> _updateBus(context) async {
@@ -273,7 +279,7 @@ class ConfirmWorkDialogBox extends StatelessWidget {
       var postBusJobPoiUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['POST_BUS_JOB_POI']}');
       DateTime now = new DateTime.now();
-      String isoDate = now.toIso8601String() + 'Z';
+      String isoDate = '0001-01-01T00:00:00.000' + 'Z';
 
       for (int i = 0; i < routePoiInfoArr.length; i++) {
         var postBusJobPoiRes =

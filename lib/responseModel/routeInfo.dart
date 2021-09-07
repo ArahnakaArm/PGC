@@ -218,22 +218,23 @@ class CreatedByInfo {
 }
 
 class RoutePoiInfo {
-  RoutePoiInfo({
-    this.routePoiInfoId,
-    this.routeInfoId,
-    this.locationNameTh,
-    this.locationNameEn,
-    this.locationNameMm,
-    this.locationNameKh,
-    this.latitude,
-    this.longitude,
-    this.order,
-    this.createdAt,
-    this.updatedAt,
-    this.deletedAt,
-    this.status,
-    this.checkInTime,
-  });
+  RoutePoiInfo(
+      {this.routePoiInfoId,
+      this.routeInfoId,
+      this.locationNameTh,
+      this.locationNameEn,
+      this.locationNameMm,
+      this.locationNameKh,
+      this.latitude,
+      this.longitude,
+      this.order,
+      this.createdAt,
+      this.updatedAt,
+      this.deletedAt,
+      this.status,
+      this.checkInTime,
+      this.passengerCount,
+      this.passengerCountUsed});
 
   String routePoiInfoId;
   String routeInfoId;
@@ -249,6 +250,8 @@ class RoutePoiInfo {
   dynamic deletedAt;
   String status;
   String checkInTime;
+  int passengerCount;
+  int passengerCountUsed;
 
   factory RoutePoiInfo.fromJson(Map<String, dynamic> json) => RoutePoiInfo(
         routePoiInfoId: json["route_poi_info_id"],

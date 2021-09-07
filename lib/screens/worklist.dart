@@ -9,6 +9,7 @@ import 'package:http/http.dart';
 import 'package:pgc/responseModel/buslistinfo.dart';
 import 'package:pgc/screens/processwork.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
+import 'package:pgc/services/utils/currentLocation.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/widgets/commonloading.dart';
 import 'package:pgc/widgets/dialogbox/confirmWorkDialogBox.dart';
@@ -32,7 +33,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
   List<ResultDatum> busCurrentList = [];
   BusListInfo busListRes;
   List<ResultDatum> busList = [];
-
+  bool isHaveCurrentWork = false;
   var isLoading = true;
   var isEmpty = false;
   bool isConnent = true;
@@ -51,6 +52,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _pageController = PageController();
     _checkInternet();
+
     super.initState();
   }
 
@@ -156,7 +158,12 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
               style: commonHeaderLabelStyle,
             ),
             _processWorkCountBox(busList.length.toString()),
-            _doingWorkButton(ctx)
+            isHaveCurrentWork
+                ? _doingWorkButton(ctx)
+                : Container(
+                    width: 0,
+                    height: 0,
+                  )
           ],
         ),
         SizedBox(
@@ -338,7 +345,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
   }
 
   void _showDialog(context, carPlate, beginMiles, busJobId) async {
-    var currentWorkCounts = await _checkInProgressWorkCounts(context);
+    var currentWorkCounts = await _checkInProgressWorkCounts();
     var connectivityResult = await (Connectivity().checkConnectivity());
     if (connectivityResult == ConnectivityResult.none) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -378,7 +385,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                 ),
               ),
             ).then((value) async {
-              await _getBusInfoList();
+              await _checkInternet();
             });
           }
         });
@@ -416,7 +423,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
             ),
           ),
         ).then((value) {
-          _getBusInfoList();
+          _checkInternet();
         });
       }
     } catch (e) {
@@ -426,7 +433,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
     }
   }
 
-  Future<int> _checkInProgressWorkCounts(context) async {
+  Future<int> _checkInProgressWorkCounts() async {
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
     String userId = await storage.read(key: 'userId');
@@ -466,6 +473,17 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
     } //
     else {
       await _getBusInfoList();
+      var currentWorkCount = await _checkInProgressWorkCounts();
+      print("currentWorkCount " + currentWorkCount.toString());
+      if (currentWorkCount > 0) {
+        setState(() {
+          isHaveCurrentWork = true;
+        });
+      } else {
+        setState(() {
+          isHaveCurrentWork = false;
+        });
+      }
     }
   }
 

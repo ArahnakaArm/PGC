@@ -15,7 +15,7 @@ class SuccessEmployeeInfoDialogBox extends StatelessWidget {
           alignment: Alignment.topCenter,
           child: Container(
             width: double.infinity,
-            margin: EdgeInsets.only(top: 200, left: 40, right: 40),
+            margin: EdgeInsets.only(top: 250, left: 40, right: 40),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
@@ -55,7 +55,7 @@ class SuccessEmployeeInfoDialogBox extends StatelessWidget {
                 ),
                 GestureDetector(
                   onTap: () {
-                    _goProcessWork(context);
+                    Navigator.of(context, rootNavigator: true).pop(false);
                   },
                   child: Container(
                     padding: EdgeInsets.symmetric(vertical: 7),

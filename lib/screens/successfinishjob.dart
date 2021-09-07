@@ -18,6 +18,7 @@ class SuccessFinishJob extends StatefulWidget {
 
 class _SuccessFinishJobState extends State<SuccessFinishJob> {
   DateTime current;
+  String docNo;
 
   Future<bool> popped() {
     _goMainMenu(context);
@@ -49,6 +50,21 @@ class _SuccessFinishJobState extends State<SuccessFinishJob> {
   }
 
   @override
+  void initState() {
+    // TODO: implement initState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        docNo = ModalRoute.of(context).settings.arguments == null
+            ? ''
+            : ModalRoute.of(context).settings.arguments;
+      });
+
+      /*  _getBusJobPoiInfo(passedData.busJobPoiId); */
+    });
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () => popped(),
@@ -77,7 +93,7 @@ class _SuccessFinishJobState extends State<SuccessFinishJob> {
                     height: 45,
                   ),
                   Text(
-                    'TRIP-2021-00001',
+                    docNo == null ? "" : docNo,
                     style: jobTitleSuccessTextStyle,
                   ),
                   SizedBox(

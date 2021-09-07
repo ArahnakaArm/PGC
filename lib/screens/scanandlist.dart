@@ -1,13 +1,23 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:connectivity/connectivity.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:pgc/model/passData.dart';
+import 'package:pgc/responseModel/passengerList.dart';
 import 'package:pgc/screens/confirmfinishjob.dart';
+import 'package:pgc/services/http/getHttpWithToken.dart';
+import 'package:pgc/services/http/putHttpWithToken.dart';
+import 'package:pgc/services/utils/common.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/widgets/backpressincontainer.dart';
 import 'package:pgc/widgets/dialogbox/employeeInfoDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/errorEmployeeInfoDialogBox.dart';
+import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/savedEmployeeInfoDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/successEmployeeInfoDialogBox.dart';
 import 'package:pgc/widgets/profilebar.dart';
@@ -28,11 +38,22 @@ class _ScanAndListState extends State<ScanAndList> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   int _selectedPage = 0;
   PageController _pageController;
-  String status = '';
+  PassDataModel passedData;
   List<PassengerModel> passengers = [
     PassengerModel('นาย A', 'เข็นรถ', '12.00 น.'),
     PassengerModel('นาย B', 'ทำครัว', '10.00 น.'),
   ];
+  List<ResultDataPassengerList> usedPassengerList = [];
+  var locationName = "";
+  var checkInTime = "";
+  var routePoiId = "";
+  var busJobInfoId = "";
+  var routeInfoId = "";
+  var unFormatCheckIntime = "";
+  var busPoiInfoStatus = "";
+  var poiInfoStatus = "";
+  int passengerCounts = 0;
+  int passengerMaxCount = 0;
 
   void _changePage(int pageNum) {
     setState(() {
@@ -55,6 +76,7 @@ class _ScanAndListState extends State<ScanAndList> {
   @override
   void initState() {
     _pageController = PageController();
+    passengerCounts = usedPassengerList.length;
     /*  Future.delayed(Duration.zero, () {
       setState(() {
         status = ModalRoute.of(context).settings.arguments;
@@ -63,9 +85,17 @@ class _ScanAndListState extends State<ScanAndList> {
     }); */
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        status = ModalRoute.of(context).settings.arguments;
+        passedData = ModalRoute.of(context).settings.arguments == null
+            ? PassDataModel('', '', '', 0)
+            : ModalRoute.of(context).settings.arguments as PassDataModel;
+
+        locationName = passedData.locationName;
+        poiInfoStatus = passedData.status;
+        passengerMaxCount = passedData.passengerCount;
       });
-      print(status);
+
+      _checkInternet(passedData.busJobPoiId);
+      /*  _getBusJobPoiInfo(passedData.busJobPoiId); */
     });
 
     super.initState();
@@ -85,82 +115,207 @@ class _ScanAndListState extends State<ScanAndList> {
     super.dispose();
   }
 
+  Future<bool> _onWillPop() async {
+    if (poiInfoStatus == 'IDLE') {
+      Navigator.pop(context);
+    } else if (poiInfoStatus == 'non-success') {
+      Navigator.pop(context);
+    } else if (poiInfoStatus == "ManualCheckin") {
+      Navigator.pop(context);
+      Navigator.pop(context);
+      /* Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ConfirmFinishJob()),
+      ); */
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: SafeArea(
-      child: Stack(
-        children: <Widget>[
-          BackGround(),
-          Column(
+    return WillPopScope(
+        onWillPop: _onWillPop,
+        child: Scaffold(
+            body: SafeArea(
+          child: Stack(
             children: <Widget>[
-              Container(
-                padding: EdgeInsets.only(left: 25.0, right: 25.0, top: 20),
-                child: BackPressInContainer(context),
-              ),
-              SizedBox(height: 15),
-              Expanded(
-                  child: Container(
-                decoration: commonBackgroundStyle,
-                margin: EdgeInsets.only(left: 25.0, right: 25.0, bottom: 20.0),
-                child: Container(
-                  child: Column(
-                    children: <Widget>[
-                      CommonSmallProcessBackground(),
-                      Container(
-                        height: 50,
-                        decoration: tabbuttonBackground,
-                        margin:
-                            EdgeInsets.only(left: 10.0, right: 10.0, top: 15),
-                        padding: EdgeInsets.only(left: 7.0, right: 7.0),
-                        child: Container(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: <Widget>[
-                              Expanded(
-                                  child: TabButton(
-                                      text: 'สแกน',
-                                      fontSize: 15,
-                                      pageNumber: 0,
-                                      selectedPage: _selectedPage,
-                                      onPressed: () {
-                                        _changePage(0);
-                                      },
-                                      haveNumText: false,
-                                      numText: '0')),
-                              Expanded(
-                                  child: TabButton(
-                                      text: 'ขึ้นรถแล้ว',
-                                      fontSize: 15,
-                                      pageNumber: 1,
-                                      selectedPage: _selectedPage,
-                                      onPressed: () {
-                                        _changePage(1);
-                                      },
-                                      haveNumText: true,
-                                      numText: '15'))
-                            ],
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: PageView(
-                          controller: _pageController,
-                          children: [
-                            _scanPage(context, status),
-                            _arrivedPassengerListPage(passengers)
-                          ],
-                        ),
-                      ),
-                    ],
+              BackGround(),
+              Column(
+                children: <Widget>[
+                  Container(
+                    padding: EdgeInsets.only(left: 25.0, right: 25.0, top: 20),
                   ),
-                ),
-              ))
+                  SizedBox(height: 15),
+                  Expanded(
+                      child: Container(
+                    decoration: commonBackgroundStyle,
+                    margin:
+                        EdgeInsets.only(left: 25.0, right: 25.0, bottom: 20.0),
+                    child: Container(
+                      child: Column(
+                        children: <Widget>[
+                          CommonSmallProcessBackground(
+                              locationName,
+                              checkInTime,
+                              busPoiInfoStatus,
+                              passengerMaxCount,
+                              passengerCounts),
+                          Container(
+                            height: 50,
+                            decoration: tabbuttonBackground,
+                            margin: EdgeInsets.only(
+                                left: 10.0, right: 10.0, top: 15),
+                            padding: EdgeInsets.only(left: 7.0, right: 7.0),
+                            child: Container(
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: <Widget>[
+                                  Expanded(
+                                      child: TabButton(
+                                          text: 'สแกน',
+                                          fontSize: 15,
+                                          pageNumber: 0,
+                                          selectedPage: _selectedPage,
+                                          onPressed: () {
+                                            _changePage(0);
+                                          },
+                                          haveNumText: false,
+                                          numText: '0')),
+                                  Expanded(
+                                      child: TabButton(
+                                          text: 'ขึ้นรถแล้ว',
+                                          fontSize: 15,
+                                          pageNumber: 1,
+                                          selectedPage: _selectedPage,
+                                          onPressed: () {
+                                            _changePage(1);
+                                          },
+                                          haveNumText: true,
+                                          numText: passengerCounts.toString()))
+                                ],
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: PageView(
+                              controller: _pageController,
+                              children: [
+                                _scanPage(context, poiInfoStatus),
+                                _arrivedPassengerListPage(passengers)
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ))
+                ],
+              ),
             ],
           ),
-        ],
-      ),
-    ));
+        )));
+
+    ;
+  }
+
+  void _checkInternet(busJobPoiId) async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult == ConnectivityResult.none) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+      );
+    } //
+    else {
+      await _getBusJobPoiInfo(busJobPoiId);
+      await _getUsedPassenger(routePoiId);
+    }
+  }
+
+  Future<void> _getBusJobPoiInfo(busJobPoiId) async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+    String userId = await storage.read(key: 'userId');
+
+    var getBusPoiUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_POI']}/${busJobPoiId}');
+
+    var getBusPoiRes = await getHttpWithToken(getBusPoiUrl, token);
+    Map<String, dynamic> getBusPoiResObj = jsonDecode(getBusPoiRes);
+
+    var busJobPoiCheckinTime =
+        getBusPoiResObj['resultData']['checkin_datetime'];
+
+    unFormatCheckIntime = busJobPoiCheckinTime;
+    routePoiId = getBusPoiResObj['resultData']['route_poi_info_id'];
+    busJobInfoId = getBusPoiResObj['resultData']['bus_job_info_id'];
+    routeInfoId = getBusPoiResObj['resultData']['route_info_id'];
+/*     busPoiInfoStatus = getBusPoiResObj['resultData']['status']; */
+
+    setState(() {
+      busPoiInfoStatus = getBusPoiResObj['resultData']['status'];
+      checkInTime = ChangeFormateDateTimeToTime(busJobPoiCheckinTime);
+    });
+  }
+
+  Future<void> _getUsedPassenger(routePoiId) async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+    String userId = await storage.read(key: 'userId');
+    var status = "USED";
+    var queryString =
+        '?route_poi_info_id=${routePoiId}&passenger_status_id=${status}';
+    var getPassengerListUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['GET_USED_PASSENGER_LIST']}${queryString}');
+
+    var res = await getHttpWithToken(getPassengerListUrl, token);
+
+    setState(() {
+      usedPassengerList = (jsonDecode(res)['resultData'] as List)
+          .map((i) => ResultDataPassengerList.fromJson(i))
+          .toList();
+      passengerCounts = usedPassengerList.length;
+    });
+
+    if (passengerCounts == passengerMaxCount) {
+      if (busPoiInfoStatus != "FINISHED") {
+        await _updateBusPoiInfo();
+      }
+      var textError = '';
+      if (passengerMaxCount == 0) {
+        textError = 'ไม่มีผู้โดยสารในจุดนี้';
+      } else {
+        textError = 'ผู้โดยสารขึ้นครบถ้วนแล้ว';
+      }
+
+      await showGeneralDialog(
+        barrierLabel: "Barrier",
+        barrierDismissible: true,
+        barrierColor: Colors.black.withOpacity(0.5),
+        transitionDuration: Duration(milliseconds: 250),
+        context: context,
+        pageBuilder: (_, __, ___) {
+          return SuccessEmployeeInfoDialogBox('${textError}');
+        },
+      ).then((val) {
+        if (poiInfoStatus == 'IDLE') {
+          Navigator.pop(context);
+        } else if (poiInfoStatus == 'non-success') {
+          Navigator.pop(context);
+        } else if (poiInfoStatus == "ManualCheckin") {
+          Navigator.pop(context);
+          Navigator.pop(context);
+          /* Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ConfirmFinishJob()),
+      ); */
+        } else {
+          Navigator.pop(context);
+        }
+      });
+      ;
+    }
   }
 
   Widget _buildQrView(BuildContext context) {
@@ -168,7 +323,7 @@ class _ScanAndListState extends State<ScanAndList> {
     var scanArea = (MediaQuery.of(context).size.width < 400 ||
             MediaQuery.of(context).size.height < 400)
         ? 250.0
-        : 300.0;
+        : 200.0;
     // To ensure the Scanner view is properly sizes after rotation
     // we need to listen for Flutter SizeChanged notification and update controller
     return QRView(
@@ -189,13 +344,74 @@ class _ScanAndListState extends State<ScanAndList> {
       this.controller = controller;
     });
     controller.scannedDataStream.listen((scanData) {
-      setState(() {
+      setState(() async {
         result = scanData;
         print(result);
         controller?.pauseCamera();
-        _showDialog(context, result.code);
+        await _putEmployee(result.code);
+
+        /*   _showDialog(context, result.code); */
       });
     });
+  }
+
+  Future<void> _putEmployee(empId) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return LoadingDialogBox();
+      },
+    );
+
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+    String userId = await storage.read(key: 'userId');
+
+    var envUsedPassenger = dotenv.env['PUT_USED_PASSENGER']
+        .replaceFirst('bus_job_info_id', busJobInfoId);
+
+    envUsedPassenger = envUsedPassenger.replaceFirst('passenger_id', empId);
+
+    var updateUsedPassenger = Uri.parse(envUsedPassenger);
+
+    print("envUsedPassengerDebug " + envUsedPassenger);
+
+    var putPassengerListUrl =
+        Uri.parse('${dotenv.env['BASE_API']}${updateUsedPassenger}');
+
+    var putRes = await putHttpWithToken(putPassengerListUrl, token, {});
+
+    print("envUsedPassengerDebug " + putPassengerListUrl.toString());
+
+    print("envUsedPassengerDebug " + putRes);
+
+    Map<String, dynamic> getBusPoiResObj = jsonDecode(putRes);
+
+    if (getBusPoiResObj['resultCode'] == "40900") {
+      Navigator.pop(context); //pop dialog
+
+      showGeneralDialog(
+        barrierLabel: "Barrier",
+        barrierDismissible: true,
+        barrierColor: Colors.black.withOpacity(0.5),
+        transitionDuration: Duration(milliseconds: 250),
+        context: context,
+        pageBuilder: (_, __, ___) {
+          return ErrorEmployeeInfoDialogBox('QRCode ซ้ำ กรุณาลองใหม่อีกครั้ง');
+        },
+      ).then((val) {
+        if (val) {
+          controller?.resumeCamera();
+        }
+        controller?.resumeCamera();
+      });
+    } else {
+      await _getUsedPassenger(routePoiId);
+
+      Navigator.pop(context); //pop dialog
+      controller?.resumeCamera();
+    }
   }
 
   void _showDialog(context, text) async {
@@ -448,143 +664,220 @@ class _ScanAndListState extends State<ScanAndList> {
       ),
     );
   }
-}
 
-Container _arrivedPassengerListPage(passengers) {
-  return Container(
-      margin: EdgeInsets.only(top: 10, right: 10, left: 10),
-      child: Padding(
-          padding: const EdgeInsets.only(left: 0, right: 0),
-          child: ListView.builder(
-              key: PageStorageKey<String>('arrivedPassengerListPage'),
-              itemCount: passengers.length,
-              itemBuilder: (BuildContext context, int index) {
-                PassengerModel passengersList = passengers[index];
-                return Column(
-                  children: <Widget>[
-                    Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border(
-                            top: BorderSide(
-                                width: 1.5,
-                                color: Color.fromRGBO(242, 242, 242, 1)),
-                          ),
-                        ),
-                        child: Column(
-                          children: <Widget>[
-                            Container(
-                              padding: EdgeInsets.only(
-                                top: 2.0,
-                                left: 4.0,
-                                right: 5.0,
-                                bottom: 8.0,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: <Widget>[
-                                  Expanded(
-                                      child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: <Widget>[
-                                      Text(
-                                        '${passengersList.fullname}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style:
-                                            arrivedPassengerListNameTextStyle,
-                                      ),
-                                      SizedBox(
-                                        height: 3,
-                                      ),
-                                      Text(
-                                        '${passengersList.department}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style:
-                                            arrivedPassengerListDepartmentTextStyle,
-                                      )
-                                    ],
-                                  )),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: <Widget>[
-                                      Text(
-                                        '${passengersList.arriveTime}',
-                                        style:
-                                            arrivedPassengerListTimeTextStyle,
-                                      ),
-                                      SizedBox(
-                                        height: 3,
-                                      ),
-                                      Text('',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style:
-                                              arrivedPassengerListDepartmentTextStyle)
-                                    ],
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        )),
-                  ],
-                );
-              })));
-}
-
-GestureDetector _endScanButton(context, status) {
-  return GestureDetector(
-    onTap: () {
-      _goConfirmFinishJob(context, status);
-      /*   _showDialog(context); */
-      /*     _showDialogError(context); */
-      /*  _showDialogSuccess(context); */
-      /*   _showDialogSaved(context); */
-    },
-    child: Container(
-      height: 60,
-      decoration: endScanButtonStyle,
-      child: Center(
-        child: Text(
-          'สิ้นสุดการสแกน',
-          style: endScanTextStyle,
+  GestureDetector _endScanButton(context, status) {
+    return GestureDetector(
+      onTap: () {
+/*       passengers.add(PassengerModel('นาย A', 'เข็นรถ', '12.00 น.')); */
+        _goConfirmFinishJob(context, status);
+        /*   _showDialog(context); */
+        /*     _showDialogError(context); */
+        /*  _showDialogSuccess(context); */
+        /*   _showDialogSaved(context); */
+      },
+      child: Container(
+        height: 60,
+        decoration: endScanButtonStyle,
+        child: Center(
+          child: Text(
+            'สิ้นสุดการสแกน',
+            style: endScanTextStyle,
+          ),
         ),
       ),
-    ),
-  );
-}
-
-void _backPress(context) {
-  Navigator.pop(context);
-}
-
-GestureDetector _backButton(context) {
-  return GestureDetector(
-    onTap: () {
-      _backPress(context);
-    },
-    child: Image.asset(
-      'assets/images/backarrow.png',
-      height: 25,
-    ),
-  );
-}
-
-void _goConfirmFinishJob(context, status) {
-  if (status == 'finished') {
-    Navigator.pop(context);
-  } else if (status == 'non-success') {
-    Navigator.pop(context);
-  } else {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ConfirmFinishJob()),
     );
+  }
+
+  void _goConfirmFinishJob(context, status) async {
+    await _updateBusPoiInfo();
+    if (status == 'IDLE') {
+      Navigator.pop(context);
+    } else if (status == 'non-success') {
+      Navigator.pop(context);
+    } else if (status == "ManualCheckin") {
+      Navigator.pop(context);
+      Navigator.pop(context);
+      /* Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ConfirmFinishJob()),
+      ); */
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _updateBusPoiInfo() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return LoadingDialogBox();
+      },
+    );
+
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+    String userId = await storage.read(key: 'userId');
+    var busJopPoiId = passedData.busJobPoiId;
+
+    var updatebusPoiUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_JOB_POI']}/${busJopPoiId}');
+    var updateBusPoiObj = {
+      "bus_job_info_id": busJobInfoId,
+      "route_info_id": routeInfoId,
+      "route_poi_info_id": routePoiId,
+      "checkin_datetime": unFormatCheckIntime.toString(),
+      "status": "FINISHED"
+    };
+    var putPoiResObj =
+        await putHttpWithToken(updatebusPoiUrl, token, updateBusPoiObj);
+
+    Navigator.pop(context);
+  }
+
+  Future<bool> _backPress() async {
+    if (poiInfoStatus == 'IDLE') {
+      Navigator.pop(context);
+    } else if (poiInfoStatus == 'non-success') {
+      Navigator.pop(context);
+    } else if (poiInfoStatus == "ManualCheckin") {
+      Navigator.pop(context);
+      Navigator.pop(context);
+      /* Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ConfirmFinishJob()),
+      ); */
+    } else {
+      Navigator.pop(context);
+    }
+  }
+/* 
+  GestureDetector _backButton(context) {
+    return GestureDetector(
+      onTap: () {
+        _backPress(context);
+      },
+      child: Image.asset(
+        'assets/images/backarrow.png',
+        height: 25,
+      ),
+    );
+  } */
+
+  Expanded _arrivedPassengerListPage(passengers) {
+    return Expanded(
+        child: Container(
+            margin: EdgeInsets.only(top: 10, right: 10, left: 10),
+            child: Padding(
+                padding: const EdgeInsets.only(left: 0, right: 0),
+                child: ListView.builder(
+                    key: PageStorageKey<String>('arrivedPassengerListPage'),
+                    itemCount: usedPassengerList.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      ResultDataPassengerList passengersList =
+                          usedPassengerList[index];
+                      return Column(
+                        children: <Widget>[
+                          Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border(
+                                  top: BorderSide(
+                                      width: 1.5,
+                                      color: Color.fromRGBO(242, 242, 242, 1)),
+                                ),
+                              ),
+                              child: Column(
+                                children: <Widget>[
+                                  Container(
+                                    padding: EdgeInsets.only(
+                                      top: 2.0,
+                                      left: 4.0,
+                                      right: 5.0,
+                                      bottom: 8.0,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: <Widget>[
+                                        Expanded(
+                                            child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: <Widget>[
+                                            Text(
+                                              '${passengersList.userInfo.firstnameTh} ${passengersList.userInfo.lastnameTh} ',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style:
+                                                  arrivedPassengerListNameTextStyle,
+                                            ),
+                                            SizedBox(
+                                              height: 3,
+                                            ),
+                                            Text(
+                                              passengersList
+                                                          .empInfo
+                                                          .empDepartmentInfo
+                                                          .empDepartmentNameTh ==
+                                                      null
+                                                  ? ""
+                                                  : passengersList
+                                                      .empInfo
+                                                      .empDepartmentInfo
+                                                      .empDepartmentNameTh,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style:
+                                                  arrivedPassengerListDepartmentTextStyle,
+                                            )
+                                          ],
+                                        )),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: <Widget>[
+                                            Text(
+                                              passengersList.usedAt == null
+                                                  ? ''
+                                                  : ChangeFormateDateTimeToTimeAddHour(
+                                                      passengersList.usedAt),
+                                              style:
+                                                  arrivedPassengerListTimeTextStyle,
+                                            ),
+                                            SizedBox(
+                                              height: 3,
+                                            ),
+                                            Text('',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style:
+                                                    arrivedPassengerListDepartmentTextStyle)
+                                          ],
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              )),
+                        ],
+                      );
+                    }))));
+  }
+
+  void _showDialogSuccess(context) async {
+    bool shouldUpdate = await showGeneralDialog(
+      barrierLabel: "Barrier",
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: Duration(milliseconds: 250),
+      context: context,
+      pageBuilder: (_, __, ___) {
+        return SuccessEmployeeInfoDialogBox('ผู้โดยสารขึ้นครบถ้วนแล้ว');
+      },
+    );
+
+    print(shouldUpdate);
   }
 }
 
@@ -612,21 +905,6 @@ void _showDialogSaved(context) async {
     context: context,
     pageBuilder: (_, __, ___) {
       return SavedEmployeeInfoDialogBox('ระบบบันทึกข้อมูลแล้ว');
-    },
-  );
-
-  print(shouldUpdate);
-}
-
-void _showDialogSuccess(context) async {
-  bool shouldUpdate = await showGeneralDialog(
-    barrierLabel: "Barrier",
-    barrierDismissible: true,
-    barrierColor: Colors.black.withOpacity(0.5),
-    transitionDuration: Duration(milliseconds: 250),
-    context: context,
-    pageBuilder: (_, __, ___) {
-      return SuccessEmployeeInfoDialogBox('ผู้โดยสารขึ้นครบถ้วนแล้ว');
     },
   );
 

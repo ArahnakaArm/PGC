@@ -23,8 +23,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  camera:
+  path_provider:
+  path:  
   badges: ^2.0.1
-  url_launcher: ^5.7.10  
+  permission_handler: ^8.0.0+2
+  url_launcher: ^6.0.0-nullsafety.1
   fluttertoast: ^8.0.8
   http: ^0.13.3
   flutter_dotenv: ^5.0.2
@@ -36,6 +40,10 @@ dependencies:
   rounded_loading_button: ^2.0.3
   qr_code_scanner: ^0.5.2
   connectivity: ^3.0.6
+  geolocator: ^7.6.0
+  firebase_messaging: ^10.0.6
+  firebase_core: ^1.6.0
+  flutter_local_notifications: ^8.1.1+2
 dev_dependencies:
   flutter_test:
     sdk: flutter
