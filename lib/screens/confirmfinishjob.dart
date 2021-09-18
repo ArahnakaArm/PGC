@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:connectivity/connectivity.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -46,9 +47,19 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
   String busJobInfoId = "";
   String finishDocNo = "";
   int mileStart;
+  var notiCounts = "0";
 
   @override
   void initState() {
+    /*   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      if (mounted) {
+        final storage = new FlutterSecureStorage();
+
+        notiCounts = (int.parse(notiCounts) + 1).toString();
+        await storage.write(key: 'notiCounts', value: notiCounts);
+        var notiCountss = await storage.read(key: 'notiCounts');
+      }
+    }); */
     availableCameras().then((cameras) {
       final camera = cameras
           .where((camera) => camera.lensDirection == CameraLensDirection.back)
@@ -86,8 +97,18 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
       );
     } //
     else {
+      _getNotiCounts();
       await _getBusJobInfo(busJobInfoId);
     }
+  }
+
+  void _getNotiCounts() async {
+    final storage = new FlutterSecureStorage();
+    String notiCountsStorage = await storage.read(key: 'notiCounts');
+    print("NOTIC FROM " + notiCounts);
+    setState(() {
+      notiCounts = notiCountsStorage;
+    });
   }
 
   Future<void> _getBusJobInfo(busJobInfoId) async {
@@ -397,7 +418,11 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
       busRef = busRefFromJson(busRefRes);
 
       String busReserveInfoId = busRef.resultData[0].busReserveInfoId;
+      final sevenHourAgo =
+          (new DateTime.now()).subtract(new Duration(minutes: 60 * 7));
 
+      String isoDate = sevenHourAgo.toIso8601String() + 'Z';
+      print("TEST NEW NUM " + endMiles);
       var updateBusJobObj = {
         "doc_no": busRef.resultData[0].busJobInfoInfo.docNo,
         "car_mileage_start":
@@ -412,36 +437,43 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
         "number_of_seat": busRef.resultData[0].busJobInfoInfo.numberOfSeat,
         "number_of_reserved":
             busRef.resultData[0].busJobInfoInfo.numberOfReserved,
-        "bus_reserve_status_id": "COMPLETED"
+        "bus_reserve_status_id": "COMPLETED",
+        "completed_at": isoDate
       };
 
       finishDocNo = busRef.resultData[0].busJobInfoInfo.docNo;
 
-      var updateBusReserveObj = {
-        "doc_no": busRef.resultData[0].busReserveInfoInfo.docNo,
-        "route_info_id": busRef.resultData[0].busReserveInfoInfo.routeInfoId,
-        "trip_datetime":
-            busRef.resultData[0].busReserveInfoInfo.tripDatetime.toString(),
-        "is_normal_time": busRef.resultData[0].busReserveInfoInfo.isNormalTime,
-        "emp_department_id":
-            busRef.resultData[0].busReserveInfoInfo.empDepartmentId,
-        "bus_reserve_status_id": "COMPLETED",
-        "bus_reserve_reason_text":
-            busRef.resultData[0].busReserveInfoInfo.busReserveReasonText == null
-                ? ''
-                : busRef.resultData[0].busReserveInfoInfo.busReserveReasonText
-      };
-
       var updateJobUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_JOB_INFO']}/${busJobInfoId}');
-      var updateReserveJobUrl = Uri.parse(
-          '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_RESERVE_INFO']}/${busReserveInfoId}');
 
       var updateJobInfo =
           await putHttpWithToken(updateJobUrl, token, updateBusJobObj);
 
-      var updateReserveJob = await putHttpWithToken(
-          updateReserveJobUrl, token, updateBusReserveObj);
+      for (int i = 0; i < busRef.resultData.length; i++) {
+        var updateReserveJobUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_RESERVE_INFO']}/${busRef.resultData[i].busReserveInfoId}');
+        var updateBusReserveObj = {
+          "doc_no": busRef.resultData[i].busReserveInfoInfo.docNo,
+          "route_info_id": busRef.resultData[i].busReserveInfoInfo.routeInfoId,
+          "trip_datetime":
+              busRef.resultData[i].busReserveInfoInfo.tripDatetime.toString(),
+          "is_normal_time":
+              busRef.resultData[i].busReserveInfoInfo.isNormalTime,
+          "emp_department_id":
+              busRef.resultData[i].busReserveInfoInfo.empDepartmentId,
+          "bus_reserve_status_id": "COMPLETED",
+          "bus_reserve_reason_text": busRef
+                      .resultData[i].busReserveInfoInfo.busReserveReasonText ==
+                  null
+              ? ''
+              : busRef.resultData[i].busReserveInfoInfo.busReserveReasonText,
+          "car_mileage": int.parse(endMiles),
+        };
+
+        var updateReserveJob = await putHttpWithToken(
+            updateReserveJobUrl, token, updateBusReserveObj);
+      }
+
       Navigator.pop(context);
     } catch (e) {
       Navigator.pop(context); //pop dialog

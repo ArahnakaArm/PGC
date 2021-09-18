@@ -18,14 +18,14 @@ class BusRef {
 
   String resultCode;
   String developerMessage;
-  List<ResultDatum> resultData;
+  List<ResultDatumBusRef> resultData;
   int rowCount;
 
   factory BusRef.fromJson(Map<String, dynamic> json) => BusRef(
         resultCode: json["resultCode"],
         developerMessage: json["developerMessage"],
-        resultData: List<ResultDatum>.from(
-            json["resultData"].map((x) => ResultDatum.fromJson(x))),
+        resultData: List<ResultDatumBusRef>.from(
+            json["resultData"].map((x) => ResultDatumBusRef.fromJson(x))),
         rowCount: json["rowCount"],
       );
 
@@ -37,8 +37,8 @@ class BusRef {
       };
 }
 
-class ResultDatum {
-  ResultDatum({
+class ResultDatumBusRef {
+  ResultDatumBusRef({
     this.busJobRefReserveId,
     this.busJobInfoId,
     this.busReserveInfoId,
@@ -52,7 +52,8 @@ class ResultDatum {
   BusJobInfoInfo busJobInfoInfo;
   BusReserveInfoInfo busReserveInfoInfo;
 
-  factory ResultDatum.fromJson(Map<String, dynamic> json) => ResultDatum(
+  factory ResultDatumBusRef.fromJson(Map<String, dynamic> json) =>
+      ResultDatumBusRef(
         busJobRefReserveId: json["bus_job_ref_reserve_id"],
         busJobInfoId: json["bus_job_info_id"],
         busReserveInfoId: json["bus_reserve_info_id"],

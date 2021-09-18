@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:pgc/utilities/constants.dart';
 
-class ErrorEmployeeInfoDialogBox extends StatelessWidget {
+class NotiScanDialogBox extends StatelessWidget {
   String errorMessage;
 
-  ErrorEmployeeInfoDialogBox(this.errorMessage);
+  NotiScanDialogBox(this.errorMessage);
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +32,8 @@ class ErrorEmployeeInfoDialogBox extends StatelessWidget {
                       ),
                       FittedBox(
                         child: Text(
-                          'พบข้อผิดพลาด',
-                          style: callDialogRedTextStyle,
+                          'แจ้งทราบ',
+                          style: callDialogBlueTextStyle,
                         ),
                       ),
                       SizedBox(

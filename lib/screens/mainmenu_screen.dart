@@ -8,27 +8,36 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pgc/responseModel/buslistinfo.dart';
+import 'package:pgc/responseModel/deviceToken.dart';
 import 'package:pgc/responseModel/user.dart';
 import 'package:pgc/screens/history.dart';
+import 'package:pgc/screens/notification_screen.dart';
+import 'package:pgc/screens/setting_screen.dart';
 import 'package:pgc/screens/unity/message.dart';
 import 'package:pgc/screens/worklist.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
+import 'package:pgc/services/http/postHttpWithToken.dart';
 import 'package:pgc/services/utils/common.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:badges/badges.dart';
 import 'package:pgc/widgets/dialogbox/callDialogBox.dart';
 import 'package:pgc/widgets/profilebarwithdepartment.dart';
+import 'package:socket_io_client/socket_io_client.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:audioplayers/audioplayers.dart';
 
 class MainMenuScreen extends StatefulWidget {
   @override
   _MainMenuScreenState createState() => _MainMenuScreenState();
 }
 
-class _MainMenuScreenState extends State<MainMenuScreen> {
+class _MainMenuScreenState extends State<MainMenuScreen>
+    with WidgetsBindingObserver {
   AndroidNotificationChannel channel;
+  IO.Socket socket;
 
   /// Initialize the [FlutterLocalNotificationsPlugin] package.
   FlutterLocalNotificationsPlugin localNotification;
@@ -37,9 +46,21 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   DateTime current;
   User user;
   BusListInfo busListInfo;
+  List<DeviceTokenArray> deviceTokenArr;
   var workCounts;
   get http => null;
+
+  var notiCounts = "0";
+  var notiCountsToSend = "0";
+
+  /////////////// Profilebar //////////////////
   bool isConnect = true;
+  String baseProfileUrl;
+  bool haveImage = false;
+  var firstName;
+  var lastName;
+  var profileUrl = "";
+  var department;
 
   Future<bool> popped() {
     FToast fToast = FToast();
@@ -68,20 +89,52 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     }
   }
 
-  Future _showNotification(title, body) async {
+  Future<AudioPlayer> playLocalAsset() async {
+    AudioCache cache = new AudioCache();
+    //At the next line, DO NOT pass the entire reference such as assets/yes.mp3. This will not work.
+    //Just pass the file name only.
+    return await cache.play("success.wav");
+  }
+
+  Future<AudioPlayer> playLocalAssetFail() async {
+    AudioCache cache = new AudioCache();
+    //At the next line, DO NOT pass the entire reference such as assets/yes.mp3. This will not work.
+    //Just pass the file name only.
+    return await cache.play("fail.wav");
+  }
+
+  Future _showNotification(data) async {
     var androidDetails = new AndroidNotificationDetails(
-        "channelId", "channelName", "channelDescription",
-        importance: Importance.high);
+        "channelId", "Work Notifications", "Send Work Notification",
+        importance: Importance.max, channelShowBadge: true);
 
     var iosDetails = new IOSNotificationDetails();
     var generalNotificationDetails =
         new NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    await localNotification.show(0, title, body, generalNotificationDetails);
+    await localNotification.show(
+        0, data['title'], data['body'], generalNotificationDetails);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed) {
+      print('resume');
+      await _getNotification();
+      await _getWorkCounts();
+    }
   }
 
   @override
   void initState() {
+    WidgetsBinding.instance.addObserver(this);
+
     var androidInitialize = new AndroidInitializationSettings('ic_launcher');
     var iOSInitialize = new IOSInitializationSettings();
     var initialzationSettings = new InitializationSettings(
@@ -91,7 +144,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
 
     localNotification.initialize(initialzationSettings);
     // TODO: implement initState
-    _checkInternet();
+
     /*    if (isConnect) {
       _getWorkCounts();
     }
@@ -99,30 +152,46 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     FirebaseMessaging.instance
         .getInitialMessage()
         .then((RemoteMessage message) {
-      if (message != null) {}
+      if (message != null) {
+        print('A new onMessageOpenedApp event was published!2');
+      }
     });
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      RemoteNotification notification = message.notification;
-      print(notification.title);
-      print(notification.body);
-      await _showNotification(notification.title, notification.body);
+      if (mounted) {
+        await _getNotification();
+        await _getWorkCounts();
+      }
+      await _showNotification(message.data);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('A new onMessageOpenedApp event was published!');
-      Navigator.pushNamed(context, '/message',
-          arguments: MessageArguments(message, true));
     });
+
+    _checkInternet();
     super.initState();
     /*   _getProfile(); */
   }
 
-  void setToken(String token) {
+  void setToken(String token) async {
     print('FCM Token: $token');
     setState(() {
       _tokenNoti = token;
     });
+
+    if (await Permission.notification.request().isGranted) {
+      _sendNotiToken(_tokenNoti);
+      print('GRANT PERMISSION : ' + _tokenNoti);
+    } else {}
+  }
+
+  void _deleteNotification() async {
+    setState(() {
+      notiCounts = "0";
+    });
+    final storage = new FlutterSecureStorage();
+    await storage.write(key: 'notiCounts', value: notiCounts);
   }
 
   @override
@@ -139,7 +208,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      ProfileBarWithDepartment(),
+                      GestureDetector(onTap: () {}, child: _wigetProfilebar()),
                       SizedBox(height: 30),
                       _getWithNotiBoxMenu('assets/images/bus.png', 'รับงาน',
                           Color.fromRGBO(255, 255, 255, 1), context),
@@ -299,7 +368,24 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     });
   }
 
+  void _goNotificationList(context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NotificationScreen(),
+        settings: RouteSettings(
+          arguments: notiCountsToSend,
+        ),
+      ),
+    ).then((value) async {
+      await _checkInternet();
+    });
+  }
+
   void _goProcessWork(context) {
+    setState(() {
+      notiCounts = "0";
+    });
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => WorkList()),
@@ -308,34 +394,237 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     });
   }
 
+  Future<void> _getNotification() async {
+    var newNotiCounts = await getNotificationsCount();
+    notiCountsToSend = newNotiCounts;
+    setState(() {
+      notiCounts = newNotiCounts;
+      /*      notiCounts = "100"; */
+    });
+  }
+
   void _checkInternet() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
     if (connectivityResult == ConnectivityResult.none) {
+      isConnect = false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
       );
     } //
     else {
+      await _getProfileStorage();
+      await _getNotification();
+
       FirebaseMessaging.instance.getToken().then(setToken);
       _tokenStream = FirebaseMessaging.instance.onTokenRefresh;
       _tokenStream.listen(setToken);
 
-      if (await Permission.notification.request().isGranted) {
-        _sendNotiToken(_tokenNoti);
-      } else {}
-
       await _getWorkCounts();
     }
   }
-}
 
-Future<void> _sendNotiToken(notiToken) async {}
+  Future<void> _sendNotiToken(notiToken) async {
+    try {
+      final storage = new FlutterSecureStorage();
+      String token = await storage.read(key: 'token');
+      String userId = await storage.read(key: 'userId');
+      var queryString = "?user_id=${userId}";
+      var getDeviceTokenUrl = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['GET_ALL_DEVICE_TOKEN']}${queryString}');
 
-void _goHistory(context) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => History()),
-  );
+      var getDeviceTokenRes = await getHttpWithToken(getDeviceTokenUrl, token);
+
+      setState(() {
+        deviceTokenArr = (jsonDecode(getDeviceTokenRes)['resultData'] as List)
+            .map((i) => DeviceTokenArray.fromJson(i))
+            .toList();
+      });
+
+      var contain =
+          deviceTokenArr.where((element) => element.deviceToken == notiToken);
+      if (contain.isEmpty) {
+        var tokenDeviceBody = {"user_id": userId, "device_token": notiToken};
+        var postDeviceTokenUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['CREATE_DEVICE_TOKEN']}');
+        var res =
+            await postHttpWithToken(postDeviceTokenUrl, token, tokenDeviceBody);
+        await storage.write(key: 'deviceToken', value: notiToken);
+      } else {}
+    } catch (e) {}
+  }
+
+  void _goHistory(context) {
+    setState(() {
+      notiCounts = "0";
+    });
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => History()),
+    ).then((value) async {
+      await _checkInternet();
+    });
+  }
+
+  /////////////////////////////// PROFILEBAR ///////////////////////////////////
+
+  Row _wigetProfilebar() {
+    return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Expanded(
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 23.0,
+                  backgroundImage: isConnect
+                      ? haveImage
+                          ? NetworkImage(profileUrl ?? "")
+                          : AssetImage(
+                              'assets/images/user.png',
+                            )
+                      : AssetImage(
+                          'assets/images/user.png',
+                        ),
+                ),
+                SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          /*    Text(
+                        user?.resultData?.firstnameTh ?? "",
+                        style: profileNameStyle,
+                      ), */
+
+                          Text(
+                            firstName ?? "",
+                            style: profileNameStyle,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(
+                            width: 10,
+                          ),
+                          Text(
+                            lastName ?? "",
+                            style: profileNameStyle,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        ],
+                      ),
+                      SizedBox(
+                        height: 1,
+                      ),
+                      /* Text(
+                    "แผนก: ${user?.resultData?.empInfo?.empDepartmentInfo?.empDepartmentNameTh ?? ""}",
+                    style: profileNameStyle,
+                  ) */
+                      Text(
+                        "แผนก: ${department ?? ""}",
+                        style: profileNameStyle,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              notiCounts != "0"
+                  ? GestureDetector(
+                      onTap: () {
+                        _deleteNotification();
+                        _goNotificationList(context);
+                      },
+                      child: Badge(
+                        position: BadgePosition.topEnd(top: -5, end: -6),
+                        toAnimate: false,
+                        shape: BadgeShape.circle,
+                        badgeColor: Color.fromRGBO(255, 0, 0, 1),
+                        borderRadius: BorderRadius.circular(8),
+                        badgeContent: Container(
+                          alignment: Alignment.center,
+                          child: Text(
+                            int.parse(notiCounts) > 99
+                                ? '99+'
+                                : '${notiCounts}',
+                            style: TextStyle(color: Colors.white, fontSize: 8),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.add_alert,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                    )
+                  : GestureDetector(
+                      onTap: () {
+                        _deleteNotification();
+                        _goNotificationList(context);
+                      },
+                      child: Icon(
+                        Icons.add_alert,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+              SizedBox(width: 10),
+              GestureDetector(
+                onTap: () {
+                  _goSettingScreen(context);
+                },
+                child: Icon(
+                  Icons.settings,
+                  color: Colors.white,
+                  size: 35,
+                ),
+              )
+            ],
+          ),
+        ]);
+  }
+
+  void _getProfileStorage() async {
+    final storage = new FlutterSecureStorage();
+    var firstNameTh = await storage.read(key: 'firstName');
+    var lastNameTh = await storage.read(key: 'lastName');
+    var profileUrlTh = await storage.read(key: 'profileUrl');
+    var departmentTh = await storage.read(key: 'department');
+
+    if (profileUrlTh == null || profileUrlTh == '') {
+      setState(() {
+        firstName = firstNameTh;
+        lastName = lastNameTh;
+        department = departmentTh;
+        haveImage = false;
+      });
+    } else {
+      setState(() {
+        firstName = firstNameTh;
+        lastName = lastNameTh;
+        department = departmentTh;
+
+        if (profileUrlTh != null || profileUrlTh != '') {
+          haveImage = true;
+          profileUrl = dotenv.env['BASE_URL_PROFILE'] + profileUrlTh;
+        } else {
+          haveImage = false;
+          profileUrl = "";
+        }
+      });
+    }
+  }
+
+  void _goSettingScreen(context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SettingScreen()),
+    );
+  }
 }
 
 void _openCallDialog(context) {}

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:connectivity/connectivity.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -30,6 +32,9 @@ import 'package:pgc/widgets/notfoundbackground.dart';
 import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/model/histories.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:pgc/widgets/profilebarwithdepartmentnoalarm.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class ProcessWork extends StatefulWidget {
   const ProcessWork({Key key}) : super(key: key);
@@ -39,6 +44,18 @@ class ProcessWork extends StatefulWidget {
 }
 
 class _ProcessWorkState extends State<ProcessWork> {
+  IO.Socket socket;
+  static const String _kLocationServicesDisabledMessage =
+      'Location services are disabled.';
+  static const String _kPermissionDeniedMessage = 'Permission denied.';
+  static const String _kPermissionDeniedForeverMessage =
+      'Permission denied forever.';
+  static const String _kPermissionGrantedMessage = 'Permission granted.';
+
+  final GeolocatorPlatform _geolocatorPlatform = GeolocatorPlatform.instance;
+
+  StreamSubscription<Position> _positionStreamSubscription;
+  StreamSubscription<ServiceStatus> _serviceStatusStreamSubscription;
   String busJobInfoId = '';
   BusRef busRef;
   String routeId = '';
@@ -56,7 +73,10 @@ class _ProcessWorkState extends State<ProcessWork> {
   var currentRouteInfoId = '';
   var currentRoutePoiId = '';
   var currentBusReserveInfoId = '';
-  bool canFinishJob = false;
+  bool canFinishJob = true;
+  int maxRadius = 0;
+  var authResSocket;
+  var notiCounts = "0";
 
   @override
   void initState() {
@@ -67,6 +87,16 @@ class _ProcessWorkState extends State<ProcessWork> {
       print(busJobInfoId);
     });
     // TODO: implement initState
+    /*   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      if (mounted) {
+        print("NOTIC FROM " + context.widget.toStringShort());
+        setState(() {
+          notiCounts = (int.parse(notiCounts) + 1).toString();
+        });
+        final storage = new FlutterSecureStorage();
+        await storage.write(key: 'notiCounts', value: notiCounts);
+      }
+    }); */
     _checkInternet();
 
     super.initState();
@@ -74,6 +104,11 @@ class _ProcessWorkState extends State<ProcessWork> {
 
   @override
   void dispose() {
+    if (_positionStreamSubscription != null) {
+      _positionStreamSubscription.cancel();
+      _positionStreamSubscription = null;
+    }
+
     // TODO: implement dispose
     super.dispose();
   }
@@ -90,7 +125,7 @@ class _ProcessWorkState extends State<ProcessWork> {
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  ProfileBarWithDepartment(),
+                  ProfileBarWithDepartmentNoAlarm(),
                 ]),
           ),
           Container(
@@ -117,17 +152,26 @@ class _ProcessWorkState extends State<ProcessWork> {
     ));
   }
 
-  Future<void> _getBusJobInfo() async {
+  void _deleteNotification() async {
     setState(() {
-      isLoading = true;
+      notiCounts = "0";
     });
+    final storage = new FlutterSecureStorage();
+    await storage.write(key: 'notiCounts', value: notiCounts);
+  }
 
+  Future<void> _getBusJobInfo() async {
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+      });
+    }
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
     String userId = await storage.read(key: 'userId');
     var getBusJobInfoUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO']}/${busJobInfoId}');
-
+    var arrStatus = [];
     try {
       var res = await getHttpWithToken(getBusJobInfoUrl, token);
 
@@ -192,12 +236,13 @@ class _ProcessWorkState extends State<ProcessWork> {
         routePoi[i].status = busPoiRes['resultData'][0]['status'];
 
         if (i < routePoi.length - 1) {
-          if (routePoi[i].status == "FINISHED") {
-            canFinishJob = true;
-          } else {
+          arrStatus.add(routePoi[i].status);
+          /*  if (routePoi[i].status != "FINISHED") {
             canFinishJob = false;
           }
-          print("CHECK CAN FINISH" + canFinishJob.toString());
+
+          print("CHECK CAN FINISH " + routePoi[i].status.toString());
+          print("CHECK CAN FINISH " + canFinishJob.toString()); */
         }
 
         if (busPoiRes['resultData'][0]['checkin_datetime'].toString() ==
@@ -209,26 +254,22 @@ class _ProcessWorkState extends State<ProcessWork> {
         }
 
         var queryStringPassengerCount =
-            '?bus_reserve_info_id=${currentBusReserveInfoId}&route_poi_info_id=${routePoiId}';
+            '?bus_job_info_id=${busJobInfoId}&route_poi_info_id=${routePoiId}';
 
         var busPoiPassengerCountUrl = Uri.parse(
             '${dotenv.env['BASE_API']}${dotenv.env['GET_PASSENGER_COUNT']}${queryStringPassengerCount}');
 
-        /*  print("RESPONSE WITH HTTP " + busPoiPassengerCountUrl.toString());
- */
         var busPoiPassengerCountResObj =
             await getHttpWithToken(busPoiPassengerCountUrl, token);
+
+        print("RESPONSE WITH HTTPss " + busPoiPassengerCountUrl.toString());
 
         Map<String, dynamic> busPoiPassengerCountRes =
             jsonDecode(busPoiPassengerCountResObj);
 
-        if (busPoiPassengerCountRes['resultData'].length != 0) {
-          print("RESPONSE WITH HTTP " +
-              busPoiPassengerCountRes['resultData'][0]['route_poi_info_count']
-                  .toString());
-          routePoi[i].passengerCount = busPoiPassengerCountRes['resultData'] !=
-                  []
-              ? busPoiPassengerCountRes['resultData'][0]['route_poi_info_count']
+        if (busPoiPassengerCountRes['rowCount'] != 0) {
+          routePoi[i].passengerCount = busPoiPassengerCountRes['rowCount'] != 0
+              ? busPoiPassengerCountRes['rowCount']
               : 0;
         } else {
           routePoi[i].passengerCount = 0;
@@ -236,7 +277,7 @@ class _ProcessWorkState extends State<ProcessWork> {
 
         var statusgUsedPassenger = "USED";
         var queryStringUsedPassenger =
-            '?route_poi_info_id=${routePoiId}&passenger_status_id=${statusgUsedPassenger}';
+            '?route_poi_info_id=${routePoiId}&passenger_status_id=${statusgUsedPassenger}&bus_job_info_id=${busJobInfoId}';
         var getPassengerListUrl = Uri.parse(
             '${dotenv.env['BASE_API']}${dotenv.env['GET_USED_PASSENGER_LIST']}${queryStringUsedPassenger}');
 
@@ -245,8 +286,22 @@ class _ProcessWorkState extends State<ProcessWork> {
 
         routePoi[i].passengerCountUsed =
             (jsonDecode(resUsedPassenger)['rowCount'] as int);
+
+        print(
+            "RESPONSE WITH HTTP " + routePoi[i].passengerCountUsed.toString());
+        print("RESPONSE WITH HTTP " + routePoiId.toString());
+        print("RESPONSE WITH HTTP " + busJobInfoId.toString());
       }
-      currentBusJobInfoId = busJobInfoId;
+      print("CHECK CAN FINISH " + arrStatus.toString());
+      if (arrStatus.contains("IDLE") || arrStatus.contains("CHECKED-IN")) {
+        print("CHECK CAN FINISH " + "CANNOT");
+        canFinishJob = false;
+      } else {
+        print("CHECK CAN FINISH " + "CAN");
+        canFinishJob = true;
+      }
+
+      busJobInfoId = busJobInfoId;
       currentRouteInfoId = routeId;
 
       setState(() {
@@ -257,6 +312,7 @@ class _ProcessWorkState extends State<ProcessWork> {
           isEmpty = true;
         }
       });
+      await _getMaxRadius();
     } catch (e) {
       print("RESPONSE WITH HTTP " + e.toString());
       if (mounted) {
@@ -268,6 +324,123 @@ class _ProcessWorkState extends State<ProcessWork> {
       isLoading = false;
       isEmpty = true;
     }
+  }
+
+  void _toggleListening() async {
+    bool isAuthSocket = false;
+    socket = IO.io("${dotenv.env['PCG_SOCKET']}", <String, dynamic>{
+      "transports": ["websocket"],
+      "autoConnect": false,
+    });
+
+    if (_positionStreamSubscription == null) {
+      final storage = new FlutterSecureStorage();
+      String token = await storage.read(key: 'token');
+      String userId = await storage.read(key: 'userId');
+      int socketInterval =
+          int.parse(dotenv.env['SOCKET_INTERVAL_MINUTE']) * 1000 * 60;
+      final positionStream =
+          _geolocatorPlatform.getPositionStream(timeInterval: socketInterval);
+      _positionStreamSubscription = positionStream.handleError((error) {
+        _positionStreamSubscription?.cancel();
+        _positionStreamSubscription = null;
+      }).listen((position) async {
+        print(position.latitude.toString());
+        print(position.longitude.toString());
+        DateTime now = new DateTime.now();
+        String isoDate = now.toIso8601String() + 'Z';
+        //////////// FOR TEST GEO POST  ////////////
+        socket.connect();
+
+        /*   busJobInfoId = "05a915ad-d8a6-4ad4-acf8-e72bc9a12b25"; */
+        if (!isAuthSocket) {
+          socket.emit("auth", {"token": token});
+          socket.onConnect((data) {
+            socket.on("auth_success", (msg) {
+              authResSocket = msg['code'];
+              print("SOCKET: " + authResSocket.toString());
+              isAuthSocket = true;
+
+              socket.emit("gps/pub", {
+                "id": busJobInfoId,
+                "data": {
+                  "lng": position.longitude.toString(),
+                  "lat": position.latitude.toString(),
+                  "datetime": isoDate
+                }
+              });
+
+              socket.on("bus-job-info-id/${busJobInfoId}/gps-sub", (msgs) {
+                print("SOCKET: " + msgs.toString());
+                print("SOCKET ID: " + busJobInfoId);
+              });
+            });
+          });
+        }
+        if (isAuthSocket) {
+          print("SOCKET: " + "WROK " + busJobInfoId);
+          socket.emit("gps/pub", {
+            "id": busJobInfoId,
+            "data": {
+              "lng": position.longitude.toString(),
+              "lat": position.latitude.toString(),
+              "datetime": isoDate
+            }
+          });
+
+          socket.on("bus-job-info-id/${busJobInfoId}/gps-sub", (msgs) {
+            print("SOCKET: " + msgs.toString());
+          });
+        }
+
+        socket.onError((data) => print(data));
+        socket.onConnectError((data) => print(data));
+
+        /*  socket = IO.io("http://192.168.1.118:5000", <String, dynamic>{
+          "transports": ["websocket"],
+          "autoConnect": false,
+        });
+        socket.io.options['auth'] = {'token': 'bar'};
+        socket.connect();
+        socket.emit("signin", "widget.sourchat.id");
+        socket.onConnect((data) {
+          print("Connected");
+          socket.on("signin", (msg) {
+            print(msg);
+          });
+        });
+        socket.onError((data) => print(data)); */
+
+        /*        final storage = new FlutterSecureStorage();
+        String token = await storage.read(key: 'token');
+        String userId = await storage.read(key: 'userId');
+
+        var busStatus = "CONFIRMED";
+        var queryString = '?bus_reserve_status_id=${busStatus}';
+        var getBusInfoListUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryString}&driver_id=${userId}');
+        var res = await getHttpWithToken(getBusInfoListUrl, token);
+   print("POSITION STEAM  " + res); */
+
+        //////////// END FOR TEST GEO POST  ////////////
+      });
+      _positionStreamSubscription?.pause();
+    }
+
+    setState(() {
+      if (_positionStreamSubscription == null) {
+        return;
+      }
+
+      String statusDisplayValue;
+      if (_positionStreamSubscription.isPaused) {
+        _positionStreamSubscription.resume();
+        statusDisplayValue = 'resumed';
+      } else {
+        _positionStreamSubscription.pause();
+        statusDisplayValue = 'paused';
+      }
+    });
   }
 
   Container _workInfoBox(heigth) {
@@ -448,8 +621,39 @@ class _ProcessWorkState extends State<ProcessWork> {
       );
     } //
     else {
+      /*   _getNotiCounts(); */
+      await _toggleListening();
       await _getBusJobInfo();
     }
+  }
+
+  /* void _getNotiCounts() async {
+    final storage = new FlutterSecureStorage();
+    String notiCountsStorage = await storage.read(key: 'notiCounts');
+    print("NOTIC FROM " + notiCountsStorage);
+
+    setState(() {
+      notiCounts = notiCountsStorage;
+    });
+  }
+ */
+  Future<void> _getMaxRadius() async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+    String userId = await storage.read(key: 'userId');
+
+    var getMaxRadiusUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['GET_APP_CONFIG_RADIUS']}');
+
+    var maxRadiusRes = await getHttpWithToken(getMaxRadiusUrl, token);
+
+    print(maxRadiusRes);
+
+    var maxRadiusFomated = jsonDecode(maxRadiusRes);
+    maxRadiusFomated = int.parse(maxRadiusFomated['resultData']['value']);
+    maxRadius = maxRadiusFomated;
+
+    print(maxRadius.toString());
   }
 
   void _goCheckIn(context, RoutePoiInfo content, status) async {
@@ -459,124 +663,104 @@ class _ProcessWorkState extends State<ProcessWork> {
         barrierDismissible: false,
         builder: (BuildContext context) {
           return ErrorEmployeeInfoDialogBox(
-              "กรุณาเช็คอินสถานที่ก่อนหน้าให้หมด");
+              "โปรดเช็คอินทุกจุดรับ-ส่งให้ครบถ้วนก่อนปิดงาน");
         },
       );
-    } else if (canFinishJob && content.status != "FINISHED") {
+    } else if (canFinishJob && content.order == routePoi.length - 1) {
+      var busJobPoiId = await _getJobPoi(content);
+
+      if (_positionStreamSubscription != null) {
+        _positionStreamSubscription.cancel();
+        _positionStreamSubscription = null;
+      }
+
+      try {
+        socket.close();
+      } catch (e) {}
+      //pop dialog
+      setState(() {
+        notiCounts = "0";
+      });
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ConfirmFinishJob(),
+          settings: RouteSettings(
+            arguments: PassDataFinishJobModel(busJobPoiId, status,
+                content.locationNameTh, busJobInfoId, content.passengerCount),
+          ),
+        ),
+      ).then((value) async {
+        await _checkInternet();
+      });
+    } else if (content.status == "IDLE") {
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return ConfirmCheckinDialogBox(content.locationNameTh);
+          return LoadingDialogBox();
         },
-      ).then((val) async {
-        if (val) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext context) {
-              return LoadingDialogBox();
-            },
-          );
-          print("deBugStatus " + content.status);
-          if (status == "success") {
-            var busJobPoiId = await _getJobPoi(content);
-            Navigator.pop(context); //pop dialog
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ConfirmFinishJob(),
-                settings: RouteSettings(
-                  arguments: PassDataFinishJobModel(
-                      busJobPoiId,
-                      status,
-                      content.locationNameTh,
-                      busJobInfoId,
-                      content.passengerCount),
-                ),
+      );
+      try {
+        Position pos = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high);
+        double diffDistance = Geolocator.distanceBetween(
+            pos.latitude,
+            pos.longitude,
+            double.parse(content.latitude),
+            double.parse(content.longitude));
+        if (diffDistance < maxRadius) {
+          var busJobPoiId = await _updateJobPoiStatus(content);
+          Navigator.pop(context); //pop dialog
+          setState(() {
+            notiCounts = "0";
+          });
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ScanAndList(),
+              settings: RouteSettings(
+                arguments: PassDataModel(
+                    busJobPoiId,
+                    status,
+                    content.locationNameTh,
+                    content.passengerCount,
+                    content.passengerCountUsed),
               ),
-            ).then((value) async {
-              await _checkInternet();
-            });
-          } else if (content.status == 'IDLE' && status != "success") {
-            Position pos = await GetCurrentPosition();
-            double diffDistance = Geolocator.distanceBetween(
-                pos.latitude,
-                pos.longitude,
-                double.parse(content.latitude),
-                double.parse(content.longitude));
-            if (diffDistance < int.parse(dotenv.env['DISTANCE_LIMIT_METER'])) {
-              var busJobPoiId = await _updateJobPoiStatus(content);
-              Navigator.pop(context); //pop dialog
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ScanAndList(),
-                  settings: RouteSettings(
-                    arguments: PassDataModel(busJobPoiId, status,
-                        content.locationNameTh, content.passengerCount),
-                  ),
-                ),
-              ).then((value) async {
-                await _checkInternet();
-              });
-            } else {
-              print("deBugStatus " + status);
-              var busJobPoiId = await _getJobPoi(content);
-              Navigator.pop(context); //pop dialog
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CheckIn(),
-                  settings: RouteSettings(
-                    arguments: PassDataModel(busJobPoiId, "ManualCheckin",
-                        content.locationNameTh, content.passengerCount),
-                  ),
-                ),
-              ).then((value) async {
-                await _checkInternet();
-              });
-            }
-          } else {
-            if (status == "success") {
-              var busJobPoiId = await _getJobPoi(content);
-              Navigator.pop(context); //pop dialog
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ConfirmFinishJob(),
-                  settings: RouteSettings(
-                    arguments: PassDataFinishJobModel(
-                        busJobPoiId,
-                        status,
-                        content.locationNameTh,
-                        busJobInfoId,
-                        content.passengerCount),
-                  ),
-                ),
-              ).then((value) async {
-                await _checkInternet();
-              });
-            } else {
-              print("deBugStatus " + status);
-              var busJobPoiId = await _getJobPoi(content);
-              Navigator.pop(context); //pop dialog
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ScanAndList(),
-                  settings: RouteSettings(
-                    arguments: PassDataModel(busJobPoiId, status,
-                        content.locationNameTh, content.passengerCount),
-                  ),
-                ),
-              ).then((value) async {
-                await _checkInternet();
-              });
-            }
-          }
-        } else {}
-      });
+            ),
+          ).then((value) async {
+            await _checkInternet();
+          });
+        } else {
+          print("deBugStatus " + status);
+          var busJobPoiId = await _getJobPoi(content);
+          Navigator.pop(context); //pop dialog
+          setState(() {
+            notiCounts = "0";
+          });
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CheckIn(),
+              settings: RouteSettings(
+                arguments: PassDataModel(
+                    busJobPoiId,
+                    "ManualCheckin",
+                    content.locationNameTh,
+                    content.passengerCount,
+                    content.passengerCountUsed),
+              ),
+            ),
+          ).then((value) async {
+            await _checkInternet();
+          });
+        }
+      } catch (e) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${dotenv.env['NO_PERMISSION_GPS']}')),
+        );
+      }
     } else {
       showDialog(
         context: context,
@@ -585,99 +769,29 @@ class _ProcessWorkState extends State<ProcessWork> {
           return LoadingDialogBox();
         },
       );
-      print("deBugStatus " + content.status);
-      if (status == "success") {
-        var busJobPoiId = await _getJobPoi(content);
-        Navigator.pop(context); //pop dialog
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ConfirmFinishJob(),
-            settings: RouteSettings(
-              arguments: PassDataFinishJobModel(busJobPoiId, status,
-                  content.locationNameTh, busJobInfoId, content.passengerCount),
-            ),
+
+      print("deBugStatus " + status);
+      var busJobPoiId = await _getJobPoi(content);
+      Navigator.pop(context);
+      setState(() {
+        notiCounts = "0";
+      }); //pop dialog
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ScanAndList(),
+          settings: RouteSettings(
+            arguments: PassDataModel(
+                busJobPoiId,
+                status,
+                content.locationNameTh,
+                content.passengerCount,
+                content.passengerCountUsed),
           ),
-        ).then((value) async {
-          await _checkInternet();
-        });
-      } else if (content.status == 'IDLE' && status != "success") {
-        Position pos = await GetCurrentPosition();
-        double diffDistance = Geolocator.distanceBetween(
-            pos.latitude,
-            pos.longitude,
-            double.parse(content.latitude),
-            double.parse(content.longitude));
-        if (diffDistance < int.parse(dotenv.env['DISTANCE_LIMIT_METER'])) {
-          var busJobPoiId = await _updateJobPoiStatus(content);
-          Navigator.pop(context); //pop dialog
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ScanAndList(),
-              settings: RouteSettings(
-                arguments: PassDataModel(busJobPoiId, status,
-                    content.locationNameTh, content.passengerCount),
-              ),
-            ),
-          ).then((value) async {
-            await _checkInternet();
-          });
-        } else {
-          print("deBugStatus " + status);
-          var busJobPoiId = await _getJobPoi(content);
-          Navigator.pop(context); //pop dialog
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CheckIn(),
-              settings: RouteSettings(
-                arguments: PassDataModel(busJobPoiId, "ManualCheckin",
-                    content.locationNameTh, content.passengerCount),
-              ),
-            ),
-          ).then((value) async {
-            await _checkInternet();
-          });
-        }
-      } else {
-        if (status == "success") {
-          var busJobPoiId = await _getJobPoi(content);
-          Navigator.pop(context); //pop dialog
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ConfirmFinishJob(),
-              settings: RouteSettings(
-                arguments: PassDataFinishJobModel(
-                    busJobPoiId,
-                    status,
-                    content.locationNameTh,
-                    busJobInfoId,
-                    content.passengerCount),
-              ),
-            ),
-          ).then((value) async {
-            await _checkInternet();
-          });
-        } else {
-          print("deBugStatus " + status);
-          var busJobPoiId = await _getJobPoi(content);
-          Navigator.pop(context); //pop dialog
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ScanAndList(),
-              settings: RouteSettings(
-                arguments: PassDataModel(busJobPoiId, status,
-                    content.locationNameTh, content.passengerCount),
-              ),
-            ),
-          ).then((value) async {
-            await _checkInternet();
-          });
-        }
-      }
+        ),
+      ).then((value) async {
+        await _checkInternet();
+      });
     }
 
 /*   Navigator.push(
@@ -698,7 +812,7 @@ class _ProcessWorkState extends State<ProcessWork> {
     String userId = await storage.read(key: 'userId');
     var routePoiId = content.routePoiInfoId;
     var queryString =
-        '?route_poi_info_id=${routePoiId}&bus_job_info_id=${currentBusJobInfoId}&route_info_id=${currentRouteInfoId}';
+        '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${currentRouteInfoId}';
 
     var getbusPoiUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_POI']}${queryString}');
@@ -718,7 +832,7 @@ class _ProcessWorkState extends State<ProcessWork> {
     var updatebusPoiUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_JOB_POI']}/${busJobPoiId}');
     var updateBusPoiObj = {
-      "bus_job_info_id": currentBusJobInfoId,
+      "bus_job_info_id": busJobInfoId,
       "route_info_id": currentRouteInfoId,
       "route_poi_info_id": routePoiId,
       "checkin_datetime": isoDate,
@@ -739,7 +853,7 @@ class _ProcessWorkState extends State<ProcessWork> {
     String userId = await storage.read(key: 'userId');
     var routePoiId = content.routePoiInfoId;
     var queryString =
-        '?route_poi_info_id=${routePoiId}&bus_job_info_id=${currentBusJobInfoId}&route_info_id=${currentRouteInfoId}';
+        '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${currentRouteInfoId}';
 
     var getbusPoiUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_POI']}${queryString}');
@@ -795,6 +909,7 @@ class _ProcessWorkState extends State<ProcessWork> {
 
   GestureDetector _finishedBoxFirst(context, RoutePoiInfo content) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         _goCheckIn(context, content, 'finished');
       },
@@ -821,6 +936,7 @@ class _ProcessWorkState extends State<ProcessWork> {
 
   GestureDetector _finishedBoxLast(context, RoutePoiInfo content) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         _goCheckIn(context, content, 'finished');
       },
@@ -847,6 +963,7 @@ class _ProcessWorkState extends State<ProcessWork> {
 
   GestureDetector _finishedBox(context, RoutePoiInfo content) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         _goCheckIn(context, content, 'finished');
       },
@@ -927,6 +1044,7 @@ class _ProcessWorkState extends State<ProcessWork> {
 
   GestureDetector _todoBoxFirst(context, RoutePoiInfo content) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         _goCheckIn(context, content, 'todo');
       },
@@ -972,6 +1090,7 @@ class _ProcessWorkState extends State<ProcessWork> {
 
   GestureDetector _todoBox(context, RoutePoiInfo content) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         _goCheckIn(context, content, 'non-success');
       },
@@ -997,6 +1116,7 @@ class _ProcessWorkState extends State<ProcessWork> {
 
   GestureDetector _successBox(context, RoutePoiInfo content) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         _goCheckIn(context, content, 'success');
       },
@@ -1105,6 +1225,9 @@ class _ProcessWorkState extends State<ProcessWork> {
   }
 
   void _goScanAndList(context, status) {
+    setState(() {
+      notiCounts = "0";
+    });
     Navigator.push(
       context,
       MaterialPageRoute(

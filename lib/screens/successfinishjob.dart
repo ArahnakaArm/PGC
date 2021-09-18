@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pgc/screens/mainmenu_screen.dart';
 import 'package:pgc/widgets/background.dart';
@@ -8,6 +10,7 @@ import 'package:pgc/widgets/profilebar.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/model/histories.dart';
 import 'package:pgc/widgets/profilebarwithdepartment.dart';
+import 'package:pgc/widgets/profilebarwithdepartmentnoalarm.dart';
 
 class SuccessFinishJob extends StatefulWidget {
   const SuccessFinishJob({Key key}) : super(key: key);
@@ -20,6 +23,7 @@ class _SuccessFinishJobState extends State<SuccessFinishJob> {
   DateTime current;
   String docNo;
 
+  var notiCounts = "0";
   Future<bool> popped() {
     _goMainMenu(context);
     /*  FToast fToast = FToast();
@@ -58,10 +62,29 @@ class _SuccessFinishJobState extends State<SuccessFinishJob> {
             ? ''
             : ModalRoute.of(context).settings.arguments;
       });
+      _getNotiCounts();
+      /*    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+        if (mounted) {
+          final storage = new FlutterSecureStorage();
+
+          notiCounts = (int.parse(notiCounts) + 1).toString();
+          await storage.write(key: 'notiCounts', value: notiCounts);
+          var notiCountss = await storage.read(key: 'notiCounts');
+        }
+      }); */
 
       /*  _getBusJobPoiInfo(passedData.busJobPoiId); */
     });
     super.initState();
+  }
+
+  void _getNotiCounts() async {
+    final storage = new FlutterSecureStorage();
+    String notiCountsStorage = await storage.read(key: 'notiCounts');
+    print("NOTIC FROM " + notiCounts);
+    setState(() {
+      notiCounts = notiCountsStorage;
+    });
   }
 
   @override
@@ -78,7 +101,7 @@ class _SuccessFinishJobState extends State<SuccessFinishJob> {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    ProfileBarWithDepartment(),
+                    ProfileBarWithDepartmentNoAlarm(),
                   ]),
             ),
             Container(
@@ -122,6 +145,14 @@ class _SuccessFinishJobState extends State<SuccessFinishJob> {
         ),
       )),
     );
+  }
+
+  void _deleteNotification() async {
+    setState(() {
+      notiCounts = "0";
+    });
+    final storage = new FlutterSecureStorage();
+    await storage.write(key: 'notiCounts', value: notiCounts);
   }
 }
 

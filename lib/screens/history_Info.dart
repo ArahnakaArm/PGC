@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:connectivity/connectivity.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -19,6 +20,7 @@ import 'package:pgc/widgets/notfoundbackground.dart';
 import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/model/histories.dart';
+import 'package:pgc/widgets/profilebarwithdepartmentnoalarm.dart';
 
 class HistoryInfo extends StatefulWidget {
   const HistoryInfo({Key key}) : super(key: key);
@@ -45,6 +47,7 @@ class _HistoryInfoState extends State<HistoryInfo> {
   var currentRouteInfoId = '';
   var currentRoutePoiId = '';
   var currentBusReserveInfoId = '';
+  var notiCounts = "0";
 
   @override
   void initState() {
@@ -53,8 +56,20 @@ class _HistoryInfoState extends State<HistoryInfo> {
         busJobInfoId = ModalRoute.of(context).settings.arguments;
       });
     });
+
+    /*   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      if (mounted) {
+        print("NOTIC FROM " + context.widget.toStringShort());
+        setState(() {
+          notiCounts = (int.parse(notiCounts) + 1).toString();
+        });
+        final storage = new FlutterSecureStorage();
+        await storage.write(key: 'notiCounts', value: notiCounts);
+      }
+    }); */
     // TODO: implement initState
     _checkInternet();
+
     /*   _getBusJobInfo(); */
     super.initState();
   }
@@ -71,7 +86,7 @@ class _HistoryInfoState extends State<HistoryInfo> {
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  ProfileBarWithDepartment(),
+                  ProfileBarWithDepartmentNoAlarm(),
                 ]),
           ),
           Container(
@@ -98,6 +113,14 @@ class _HistoryInfoState extends State<HistoryInfo> {
     ));
   }
 
+  void _deleteNotification() async {
+    setState(() {
+      notiCounts = "0";
+    });
+    final storage = new FlutterSecureStorage();
+    await storage.write(key: 'notiCounts', value: notiCounts);
+  }
+
   void _checkInternet() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
     if (connectivityResult == ConnectivityResult.none) {
@@ -107,8 +130,19 @@ class _HistoryInfoState extends State<HistoryInfo> {
       setState(() {});
     } //
     else {
+      await _getNotiCounts();
       await _getBusJobInfo();
     }
+  }
+
+  Future<void> _getNotiCounts() async {
+    final storage = new FlutterSecureStorage();
+    String notiCountsStorage = await storage.read(key: 'notiCounts');
+    print("NOTIC FROM " + notiCountsStorage);
+
+    setState(() {
+      notiCounts = notiCountsStorage;
+    });
   }
 
   Future<void> _getBusJobInfo() async {
@@ -193,26 +227,22 @@ class _HistoryInfoState extends State<HistoryInfo> {
         }
 
         var queryStringPassengerCount =
-            '?bus_reserve_info_id=${currentBusReserveInfoId}&route_poi_info_id=${routePoiId}';
+            '?bus_job_info_id=${busJobInfoId}&route_poi_info_id=${routePoiId}';
 
         var busPoiPassengerCountUrl = Uri.parse(
             '${dotenv.env['BASE_API']}${dotenv.env['GET_PASSENGER_COUNT']}${queryStringPassengerCount}');
 
-        /*  print("RESPONSE WITH HTTP " + busPoiPassengerCountUrl.toString());
- */
         var busPoiPassengerCountResObj =
             await getHttpWithToken(busPoiPassengerCountUrl, token);
+
+        print("RESPONSE WITH HTTPss " + busPoiPassengerCountUrl.toString());
 
         Map<String, dynamic> busPoiPassengerCountRes =
             jsonDecode(busPoiPassengerCountResObj);
 
-        if (busPoiPassengerCountRes['resultData'].length != 0) {
-          print("RESPONSE WITH HTTP " +
-              busPoiPassengerCountRes['resultData'][0]['route_poi_info_count']
-                  .toString());
-          routePoi[i].passengerCount = busPoiPassengerCountRes['resultData'] !=
-                  []
-              ? busPoiPassengerCountRes['resultData'][0]['route_poi_info_count']
+        if (busPoiPassengerCountRes['rowCount'] != 0) {
+          routePoi[i].passengerCount = busPoiPassengerCountRes['rowCount'] != 0
+              ? busPoiPassengerCountRes['rowCount']
               : 0;
         } else {
           routePoi[i].passengerCount = 0;
@@ -220,7 +250,7 @@ class _HistoryInfoState extends State<HistoryInfo> {
 
         var statusgUsedPassenger = "USED";
         var queryStringUsedPassenger =
-            '?route_poi_info_id=${routePoiId}&passenger_status_id=${statusgUsedPassenger}';
+            '?route_poi_info_id=${routePoiId}&passenger_status_id=${statusgUsedPassenger}&bus_job_info_id=${busJobInfoId}';
         var getPassengerListUrl = Uri.parse(
             '${dotenv.env['BASE_API']}${dotenv.env['GET_USED_PASSENGER_LIST']}${queryStringUsedPassenger}');
 
@@ -440,9 +470,8 @@ Container _statusBar(text, color) {
 
 GestureDetector _finishedBox(context, content) {
   return GestureDetector(
-    onTap: () {
-      _goScanAndList(context, 'finished');
-    },
+    behavior: HitTestBehavior.opaque,
+    onTap: () {},
     child: Container(
       height: 70,
       child: Row(
@@ -466,9 +495,8 @@ GestureDetector _finishedBox(context, content) {
 
 GestureDetector _finishedBoxFirst(context, content) {
   return GestureDetector(
-    onTap: () {
-      _goScanAndList(context, 'finished');
-    },
+    behavior: HitTestBehavior.opaque,
+    onTap: () {},
     child: Container(
       height: 70,
       child: Row(
@@ -492,9 +520,8 @@ GestureDetector _finishedBoxFirst(context, content) {
 
 GestureDetector _finishedBoxLast(context, content) {
   return GestureDetector(
-    onTap: () {
-      _goScanAndList(context, 'finished');
-    },
+    behavior: HitTestBehavior.opaque,
+    onTap: () {},
     child: Container(
       height: 70,
       child: Row(
@@ -564,6 +591,7 @@ Container _todoBox(content) {
 
 GestureDetector _successBox(context, content) {
   return GestureDetector(
+    behavior: HitTestBehavior.opaque,
     onTap: () {
       _goCheckIn(context, 'success');
     },

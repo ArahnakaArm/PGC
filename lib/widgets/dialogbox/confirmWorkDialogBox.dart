@@ -17,10 +17,13 @@ class ConfirmWorkDialogBox extends StatelessWidget {
   String beginMiles;
   FocusNode miles = FocusNode();
   BusRef busRef;
-  List<ResultDatum> busCurrentList = [];
+  List<ResultDatumBusRef> busCurrentList = [];
   String reserveId;
+  String endMiles;
   TextEditingController milesController = new TextEditingController();
-  ConfirmWorkDialogBox(this.busJobId, this.carPlate, this.beginMiles);
+  ConfirmWorkDialogBox(
+      this.busJobId, this.carPlate, this.beginMiles, this.endMiles);
+  bool canPress = true;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +80,10 @@ class ConfirmWorkDialogBox extends StatelessWidget {
                                 child: TextField(
                                   maxLines: 1,
                                   focusNode: miles,
-                                  controller: milesController,
+                                  controller: milesController
+                                    ..text = this.endMiles != null
+                                        ? this.endMiles
+                                        : 0,
                                   autofocus: true,
                                   keyboardType: TextInputType.number,
                                   decoration: new InputDecoration(
@@ -87,7 +93,7 @@ class ConfirmWorkDialogBox extends StatelessWidget {
                                       errorBorder: InputBorder.none,
                                       disabledBorder: InputBorder.none,
                                       hintText:
-                                          "${this.beginMiles != null ? '0' : this.beginMiles}"),
+                                          "${this.endMiles != null ? this.endMiles : '0'}"),
                                 )),
                             SizedBox(
                               width: 3,
@@ -178,8 +184,20 @@ class ConfirmWorkDialogBox extends StatelessWidget {
   }
 
   void _goProgess(context) async {
+    Pattern pattern = r'[0-9]$';
+    RegExp regex = new RegExp(pattern);
     if (milesController.text != "") {
-      await _updateBus(context);
+      print("TEST NEW NUM " + milesController.text);
+      if (!regex.hasMatch(milesController.text)) {
+        print("TEST NEW NUM " + "DDDD");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('กรุณากรอกเฉพาะตัวเลข')),
+        );
+      } else {
+        Navigator.of(context, rootNavigator: true).pop(milesController.text);
+      }
+
+/*       await _updateBus(context); */
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('กรุณากรอกเลขไมล์')),
@@ -187,120 +205,128 @@ class ConfirmWorkDialogBox extends StatelessWidget {
     }
   }
 
-  Future<void> _updateBus(context) async {
-    final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    //////////// GET REF INFO ///////////////////
-    var queryString = '?bus_job_info_id=${busJobId}';
+/*   Future<void> _updateBus(context) async {
+    if (canPress) {
+      canPress = false;
+      final storage = new FlutterSecureStorage();
+      String token = await storage.read(key: 'token');
+      //////////// GET REF INFO ///////////////////
+      var queryString = '?bus_job_info_id=${busJobId}';
 
-    var busRefUrl = Uri.parse(
-        '${dotenv.env['BASE_API']}${dotenv.env['GET_REF_BUS_JOB_RESERVE']}${queryString}');
+      var busRefUrl = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['GET_REF_BUS_JOB_RESERVE']}${queryString}');
 
-    try {
-      var busRefRes = await getHttpWithToken(busRefUrl, token);
+      try {
+        var busRefRes = await getHttpWithToken(busRefUrl, token);
 
-      busRef = busRefFromJson(busRefRes);
+        busRef = busRefFromJson(busRefRes);
 
-      String busReserveInfoId = busRef.resultData[0].busReserveInfoId;
+        String busReserveInfoId = busRef.resultData[0].busReserveInfoId;
 
-      var updateBusJobObj = {
-        "doc_no": busRef.resultData[0].busJobInfoInfo.docNo,
-        "car_mileage_start": int.parse(milesController.text),
-        "car_mileage_end":
-            busRef.resultData[0].busJobInfoInfo.carMileageEnd == null
-                ? 0
-                : busRef.resultData[0].busJobInfoInfo.carMileageEnd,
-        "destination_image_path":
-            busRef.resultData[0].busJobInfoInfo.destinationImagePath == null
-                ? ''
-                : busRef.resultData[0].busJobInfoInfo.destinationImagePath,
-        "route_info_id": busRef.resultData[0].busJobInfoInfo.routeInfoId,
-        "trip_datetime":
-            busRef.resultData[0].busJobInfoInfo.tripDatetime.toString(),
-        "driver_id": busRef.resultData[0].busJobInfoInfo.driverId,
-        "car_info_id": busRef.resultData[0].busJobInfoInfo.carInfoId,
-        "number_of_seat": busRef.resultData[0].busJobInfoInfo.numberOfSeat,
-        "number_of_reserved":
-            busRef.resultData[0].busJobInfoInfo.numberOfReserved,
-        "bus_reserve_status_id": "INPROGRESS"
-      };
+        var updateBusJobObj = {
+          "doc_no": busRef.resultData[0].busJobInfoInfo.docNo,
+          "car_mileage_start": int.parse(milesController.text),
+          "car_mileage_end":
+              busRef.resultData[0].busJobInfoInfo.carMileageEnd == null
+                  ? 0
+                  : busRef.resultData[0].busJobInfoInfo.carMileageEnd,
+          "destination_image_path":
+              busRef.resultData[0].busJobInfoInfo.destinationImagePath == null
+                  ? ''
+                  : busRef.resultData[0].busJobInfoInfo.destinationImagePath,
+          "route_info_id": busRef.resultData[0].busJobInfoInfo.routeInfoId,
+          "trip_datetime":
+              busRef.resultData[0].busJobInfoInfo.tripDatetime.toString(),
+          "driver_id": busRef.resultData[0].busJobInfoInfo.driverId,
+          "car_info_id": busRef.resultData[0].busJobInfoInfo.carInfoId,
+          "number_of_seat": busRef.resultData[0].busJobInfoInfo.numberOfSeat,
+          "number_of_reserved":
+              busRef.resultData[0].busJobInfoInfo.numberOfReserved,
+          "bus_reserve_status_id": "INPROGRESS"
+        };
 
-      var updateBusReserveObj = {
-        "doc_no": busRef.resultData[0].busReserveInfoInfo.docNo,
-        "route_info_id": busRef.resultData[0].busReserveInfoInfo.routeInfoId,
-        "trip_datetime":
-            busRef.resultData[0].busReserveInfoInfo.tripDatetime.toString(),
-        "is_normal_time": busRef.resultData[0].busReserveInfoInfo.isNormalTime,
-        "emp_department_id":
-            busRef.resultData[0].busReserveInfoInfo.empDepartmentId,
-        "bus_reserve_status_id": "INPROGRESS",
-        "bus_reserve_reason_text":
-            busRef.resultData[0].busReserveInfoInfo.busReserveReasonText == null
-                ? ''
-                : busRef.resultData[0].busReserveInfoInfo.busReserveReasonText
-      };
+        var updateBusReserveObj = {
+          "doc_no": busRef.resultData[0].busReserveInfoInfo.docNo,
+          "route_info_id": busRef.resultData[0].busReserveInfoInfo.routeInfoId,
+          "trip_datetime":
+              busRef.resultData[0].busReserveInfoInfo.tripDatetime.toString(),
+          "is_normal_time":
+              busRef.resultData[0].busReserveInfoInfo.isNormalTime,
+          "emp_department_id":
+              busRef.resultData[0].busReserveInfoInfo.empDepartmentId,
+          "bus_reserve_status_id": "INPROGRESS",
+          "bus_reserve_reason_text": busRef
+                      .resultData[0].busReserveInfoInfo.busReserveReasonText ==
+                  null
+              ? ''
+              : busRef.resultData[0].busReserveInfoInfo.busReserveReasonText,
+          "car_mileage": int.parse(milesController.text),
+        };
 
-      /////////// END GET REF INFO /////////////////
-      ///
-      ///
-      ///
-      /////////// UPDATE BUSJOB AND BUSRESERVE /////
+        /////////// END GET REF INFO /////////////////
+        ///
+        ///
+        ///
+        /////////// UPDATE BUSJOB AND BUSRESERVE /////
 
-      var updateJobUrl = Uri.parse(
-          '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_JOB_INFO']}/${busJobId}');
-      var updateReserveJobUrl = Uri.parse(
-          '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_RESERVE_INFO']}/${busReserveInfoId}');
+        var updateJobUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_JOB_INFO']}/${busJobId}');
+        var updateReserveJobUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_RESERVE_INFO']}/${busReserveInfoId}');
 
-      var updateJobInfo =
-          await putHttpWithToken(updateJobUrl, token, updateBusJobObj);
+        var updateJobInfo =
+            await putHttpWithToken(updateJobUrl, token, updateBusJobObj);
 
-      var updateReserveJob = await putHttpWithToken(
-          updateReserveJobUrl, token, updateBusReserveObj);
+        var updateReserveJob = await putHttpWithToken(
+            updateReserveJobUrl, token, updateBusReserveObj);
 
-      /////////// END UPDATE BUSJOB AND BUSRESERVE /////
-      ///
-      ///
-      ///
-      /////////// GET ROUTE POI INFO ///////////////////
-      var routeInfoId = busRef.resultData[0].busJobInfoInfo.routeInfoId;
-      var busInfoId = busRef.resultData[0].busJobInfoId;
+        /////////// END UPDATE BUSJOB AND BUSRESERVE /////
+        ///
+        ///
+        ///
+        /////////// GET ROUTE POI INFO ///////////////////
+        var routeInfoId = busRef.resultData[0].busJobInfoInfo.routeInfoId;
+        var busInfoId = busRef.resultData[0].busJobInfoId;
 
-      var queryString = '?route_info_id=${routeInfoId}';
-      var getRoutePoiUrl = Uri.parse(
-          '${dotenv.env['BASE_API']}${dotenv.env['GET_ROUTE_POI_INFO']}${queryString}');
+        var queryString = '?route_info_id=${routeInfoId}';
+        var getRoutePoiUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['GET_ROUTE_POI_INFO']}${queryString}');
 
-      var routePoiInfoRes = await getHttpWithToken(getRoutePoiUrl, token);
+        var routePoiInfoRes = await getHttpWithToken(getRoutePoiUrl, token);
 
-      List<RoutePoiInfo> routePoiInfoArr = [];
-      routePoiInfoArr = (jsonDecode(routePoiInfoRes)['resultData'] as List)
-          .map((i) => RoutePoiInfo.fromJson(i))
-          .toList();
+        List<RoutePoiInfo> routePoiInfoArr = [];
+        routePoiInfoArr = (jsonDecode(routePoiInfoRes)['resultData'] as List)
+            .map((i) => RoutePoiInfo.fromJson(i))
+            .toList();
 
-      var postBusJobPoiUrl = Uri.parse(
-          '${dotenv.env['BASE_API']}${dotenv.env['POST_BUS_JOB_POI']}');
-      DateTime now = new DateTime.now();
-      String isoDate = '0001-01-01T00:00:00.000' + 'Z';
+        var postBusJobPoiUrl = Uri.parse(
+            '${dotenv.env['BASE_API']}${dotenv.env['POST_BUS_JOB_POI']}');
+        DateTime now = new DateTime.now();
+        String isoDate = '0001-01-01T00:00:00.000' + 'Z';
 
-      for (int i = 0; i < routePoiInfoArr.length; i++) {
-        var postBusJobPoiRes =
-            await postHttpWithToken(postBusJobPoiUrl, token, {
-          'bus_job_info_id': busInfoId,
-          'route_info_id': routeInfoId,
-          'checkin_datetime': isoDate,
-          'route_poi_info_id': routePoiInfoArr[i].routePoiInfoId,
-          'status': 'IDLE'
-        });
-      }
-      /*     print(routePoiInfoArr);
+        for (int i = 0; i < routePoiInfoArr.length; i++) {
+          var postBusJobPoiRes =
+              await postHttpWithToken(postBusJobPoiUrl, token, {
+            'bus_job_info_id': busInfoId,
+            'route_info_id': routeInfoId,
+            'checkin_datetime': isoDate,
+            'route_poi_info_id': routePoiInfoArr[i].routePoiInfoId,
+            'status': 'IDLE'
+          });
+        }
+        /*     print(routePoiInfoArr);
       print(busInfoId); */
 
-      /////////// END GET ROUTE POI INFO ///////////////////
-      Navigator.of(context, rootNavigator: true).pop(true);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
-      );
-      Navigator.of(context, rootNavigator: true).pop(false);
-    }
-  }
+        /////////// END GET ROUTE POI INFO ///////////////////
+
+        Navigator.of(context, rootNavigator: true).pop(true);
+      } catch (e) {
+        canPress = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+        );
+        Navigator.of(context, rootNavigator: true).pop(false);
+      }
+    } else {}
+  } */
 }

@@ -18,6 +18,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with WidgetsBindingObserver {
   User user;
+  String version = "";
   @override
   void initState() {
     // TODO: implement initState
@@ -83,6 +84,13 @@ class _SplashScreenState extends State<SplashScreen>
                       Text(
                         'กำลังโหลด...',
                         style: splashScreenLoadingTextStyle,
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      Text(
+                        version,
+                        style: splashScreenLoadingTextStyle,
                       )
                     ],
                   ),
@@ -109,6 +117,10 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _checkToken() async {
+    setState(() {
+      version = 'V ${dotenv.env['CURRENT_VER']}';
+    });
+
     final storage = new FlutterSecureStorage();
     String userId = await storage.read(key: 'userId');
     String token = await storage.read(key: 'token');

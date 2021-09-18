@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-
+import 'package:http/http.dart' as http;
+import 'package:audioplayers/audioplayers.dart';
 import 'package:connectivity/connectivity.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -15,9 +17,11 @@ import 'package:pgc/services/http/putHttpWithToken.dart';
 import 'package:pgc/services/utils/common.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/widgets/backpressincontainer.dart';
-import 'package:pgc/widgets/dialogbox/employeeInfoDialogBox.dart';
+
 import 'package:pgc/widgets/dialogbox/errorEmployeeInfoDialogBox.dart';
+import 'package:pgc/widgets/dialogbox/errorScanDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
+import 'package:pgc/widgets/dialogbox/notiScanDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/savedEmployeeInfoDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/successEmployeeInfoDialogBox.dart';
 import 'package:pgc/widgets/profilebar.dart';
@@ -54,7 +58,7 @@ class _ScanAndListState extends State<ScanAndList> {
   var poiInfoStatus = "";
   int passengerCounts = 0;
   int passengerMaxCount = 0;
-
+  var notiCounts = "0";
   void _changePage(int pageNum) {
     setState(() {
       _selectedPage = pageNum;
@@ -83,10 +87,20 @@ class _ScanAndListState extends State<ScanAndList> {
       });
       print(status);
     }); */
+
+    /*  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      if (mounted) {
+        final storage = new FlutterSecureStorage();
+
+        notiCounts = (int.parse(notiCounts) + 1).toString();
+        await storage.write(key: 'notiCounts', value: notiCounts);
+        var notiCountss = await storage.read(key: 'notiCounts');
+      }
+    }); */
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
         passedData = ModalRoute.of(context).settings.arguments == null
-            ? PassDataModel('', '', '', 0)
+            ? PassDataModel('', '', '', 0, 0)
             : ModalRoute.of(context).settings.arguments as PassDataModel;
 
         locationName = passedData.locationName;
@@ -113,6 +127,15 @@ class _ScanAndListState extends State<ScanAndList> {
     _pageController.dispose();
     controller?.dispose();
     super.dispose();
+  }
+
+  void _getNotiCounts() async {
+    final storage = new FlutterSecureStorage();
+    String notiCountsStorage = await storage.read(key: 'notiCounts');
+    print("NOTIC FROM " + notiCounts);
+    setState(() {
+      notiCounts = notiCountsStorage;
+    });
   }
 
   Future<bool> _onWillPop() async {
@@ -228,6 +251,7 @@ class _ScanAndListState extends State<ScanAndList> {
       );
     } //
     else {
+      _getNotiCounts();
       await _getBusJobPoiInfo(busJobPoiId);
       await _getUsedPassenger(routePoiId);
     }
@@ -251,7 +275,6 @@ class _ScanAndListState extends State<ScanAndList> {
     routePoiId = getBusPoiResObj['resultData']['route_poi_info_id'];
     busJobInfoId = getBusPoiResObj['resultData']['bus_job_info_id'];
     routeInfoId = getBusPoiResObj['resultData']['route_info_id'];
-/*     busPoiInfoStatus = getBusPoiResObj['resultData']['status']; */
 
     setState(() {
       busPoiInfoStatus = getBusPoiResObj['resultData']['status'];
@@ -265,7 +288,7 @@ class _ScanAndListState extends State<ScanAndList> {
     String userId = await storage.read(key: 'userId');
     var status = "USED";
     var queryString =
-        '?route_poi_info_id=${routePoiId}&passenger_status_id=${status}';
+        '?route_poi_info_id=${routePoiId}&passenger_status_id=${status}&bus_job_info_id=${busJobInfoId}';
     var getPassengerListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_USED_PASSENGER_LIST']}${queryString}');
 
@@ -277,6 +300,9 @@ class _ScanAndListState extends State<ScanAndList> {
           .toList();
       passengerCounts = usedPassengerList.length;
     });
+
+    print("data ID and Type " + passengerCounts.toString());
+    print("data ID and Type " + busJobInfoId);
 
     if (passengerCounts == passengerMaxCount) {
       if (busPoiInfoStatus != "FINISHED") {
@@ -296,7 +322,7 @@ class _ScanAndListState extends State<ScanAndList> {
         transitionDuration: Duration(milliseconds: 250),
         context: context,
         pageBuilder: (_, __, ___) {
-          return SuccessEmployeeInfoDialogBox('${textError}');
+          return NotiScanDialogBox('${textError}');
         },
       ).then((val) {
         if (poiInfoStatus == 'IDLE') {
@@ -316,6 +342,20 @@ class _ScanAndListState extends State<ScanAndList> {
       });
       ;
     }
+  }
+
+  Future<AudioPlayer> playLocalAsset() async {
+    AudioCache cache = new AudioCache();
+    //At the next line, DO NOT pass the entire reference such as assets/yes.mp3. This will not work.
+    //Just pass the file name only.
+    return await cache.play("success.wav");
+  }
+
+  Future<AudioPlayer> playLocalAssetFail() async {
+    AudioCache cache = new AudioCache();
+    //At the next line, DO NOT pass the entire reference such as assets/yes.mp3. This will not work.
+    //Just pass the file name only.
+    return await cache.play("fail.wav");
   }
 
   Widget _buildQrView(BuildContext context) {
@@ -346,8 +386,9 @@ class _ScanAndListState extends State<ScanAndList> {
     controller.scannedDataStream.listen((scanData) {
       setState(() async {
         result = scanData;
-        print(result);
+
         controller?.pauseCamera();
+
         await _putEmployee(result.code);
 
         /*   _showDialog(context, result.code); */
@@ -355,42 +396,409 @@ class _ScanAndListState extends State<ScanAndList> {
     });
   }
 
-  Future<void> _putEmployee(empId) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return LoadingDialogBox();
-      },
-    );
+  Future<void> _putEmployee(data) async {
+    var dataId = "";
+    var dataType = "";
+    try {
+      data = json.decode(data);
+      if (data['id'] != null) {
+        dataId = data['id'];
+      }
+      if (data['type'] != null) {
+        dataType = data['type'];
+      }
+    } catch (e) {
+      controller?.resumeCamera();
+      print("data ID and Type " + e.toString());
+    }
 
-    final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    print("data ID and Type " + dataId);
+    print("data ID and Type " + dataType);
 
-    var envUsedPassenger = dotenv.env['PUT_USED_PASSENGER']
-        .replaceFirst('bus_job_info_id', busJobInfoId);
+    if (dataId != "" && dataType != "") {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return LoadingDialogBox();
+        },
+      );
 
-    envUsedPassenger = envUsedPassenger.replaceFirst('passenger_id', empId);
+      final storage = new FlutterSecureStorage();
+      String token = await storage.read(key: 'token');
+      String userId = await storage.read(key: 'userId');
 
-    var updateUsedPassenger = Uri.parse(envUsedPassenger);
+      var envUsedPassenger = "";
+      var updateUsedPassenger;
 
-    print("envUsedPassengerDebug " + envUsedPassenger);
+      ///////////////////////// TICKET //////////////////////////
+      if (dataType == "TICKET") {
+        envUsedPassenger = dotenv.env['PUT_USED_PASSENGER']
+            .replaceFirst('bus_job_info_id', busJobInfoId);
+        envUsedPassenger =
+            envUsedPassenger.replaceFirst('passenger_id', dataId);
+        updateUsedPassenger = Uri.parse(envUsedPassenger);
 
-    var putPassengerListUrl =
-        Uri.parse('${dotenv.env['BASE_API']}${updateUsedPassenger}');
+        var putPassengerListUrl =
+            Uri.parse('${dotenv.env['BASE_API']}${updateUsedPassenger}');
 
-    var putRes = await putHttpWithToken(putPassengerListUrl, token, {});
+        var updateObj = {};
+        var putRes =
+            await putHttpWithToken(putPassengerListUrl, token, updateObj);
 
-    print("envUsedPassengerDebug " + putPassengerListUrl.toString());
+        print("envUsedPassengerDebug " + putPassengerListUrl.toString());
 
-    print("envUsedPassengerDebug " + putRes);
+        print("envUsedPassengerDebug " + putRes);
 
-    Map<String, dynamic> getBusPoiResObj = jsonDecode(putRes);
+        Map<String, dynamic> getBusPoiResObj = jsonDecode(putRes);
 
-    if (getBusPoiResObj['resultCode'] == "40900") {
-      Navigator.pop(context); //pop dialog
+        if (getBusPoiResObj['resultCode'] == "40900") {
+          Navigator.pop(context); //pop dialog
 
+          await playLocalAssetFail();
+          showGeneralDialog(
+            barrierLabel: "Barrier",
+            barrierDismissible: true,
+            barrierColor: Colors.black.withOpacity(0.5),
+            transitionDuration: Duration(milliseconds: 250),
+            context: context,
+            pageBuilder: (_, __, ___) {
+              return ErrorScanDialogBox('QR Code นี้แสกนแล้ว');
+            },
+          ).then((val) {
+            if (val) {
+              controller?.resumeCamera();
+            }
+            controller?.resumeCamera();
+          });
+        } else if (getBusPoiResObj['resultCode'] == "40401") {
+          Navigator.pop(context); //pop dialog
+
+          await playLocalAssetFail();
+          showGeneralDialog(
+            barrierLabel: "Barrier",
+            barrierDismissible: true,
+            barrierColor: Colors.black.withOpacity(0.5),
+            transitionDuration: Duration(milliseconds: 250),
+            context: context,
+            pageBuilder: (_, __, ___) {
+              return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
+            },
+          ).then((val) {
+            if (val) {
+              controller?.resumeCamera();
+            }
+            controller?.resumeCamera();
+          });
+        } else if (getBusPoiResObj['resultCode'] == "40000") {
+          Navigator.pop(context); //pop dialog
+
+          await playLocalAssetFail();
+          showGeneralDialog(
+            barrierLabel: "Barrier",
+            barrierDismissible: true,
+            barrierColor: Colors.black.withOpacity(0.5),
+            transitionDuration: Duration(milliseconds: 250),
+            context: context,
+            pageBuilder: (_, __, ___) {
+              return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
+            },
+          ).then((val) {
+            if (val) {
+              controller?.resumeCamera();
+            }
+            controller?.resumeCamera();
+          });
+        } else {
+          await playLocalAsset();
+          Navigator.pop(context);
+          await _getUsedPassenger(routePoiId);
+
+          //pop dialog
+          controller?.resumeCamera();
+        }
+      }
+
+      ///////////////////////////////////////////////////////////
+
+      ///////////////////////// USER ////////////////////////////
+
+      else if (dataType == "EMP") {
+        /////////// VERIFY ////////////
+
+        var envUserVerify = dotenv.env['VERIFY_USER']
+            .replaceFirst('bus_job_info_id', busJobInfoId);
+
+        envUserVerify = envUserVerify.replaceFirst('user_id', dataId);
+        var userVerify = Uri.parse(envUserVerify);
+
+        var userVerifyUrl = Uri.parse('${dotenv.env['BASE_API']}${userVerify}');
+
+        var userVerifyRes = await putHttpWithToken(userVerifyUrl, token, {});
+        print("SOCKEH" + userVerifyRes.toString());
+        Map<String, dynamic> userVerifyResObj = jsonDecode(userVerifyRes);
+
+        if (userVerifyResObj['resultCode'] == "20000") {
+          Navigator.pop(context);
+          var empName = userVerifyResObj['resultData']['firstname_th'] +
+              " " +
+              userVerifyResObj['resultData']['lastname_th'];
+
+          var empId =
+              userVerifyResObj['resultData']['emp_info']['emp_code'] != null
+                  ? userVerifyResObj['resultData']['emp_info']['emp_code']
+                  : "";
+
+          var empDepartment = userVerifyResObj['resultData']['emp_info']
+                      ['emp_department_info']['emp_department_name_th'] !=
+                  null
+              ? userVerifyResObj['resultData']['emp_info']
+                  ['emp_department_info']['emp_department_name_th']
+              : "";
+
+          var empImage = userVerifyResObj['resultData']['image_profile_file'];
+
+          if (empImage == null) {
+            empImage = "";
+          }
+
+          if (empImage != null) {
+            var checkImage = await http
+                .get(Uri.parse(dotenv.env['BASE_URL_PROFILE'] + empImage));
+
+            if (checkImage.statusCode != 200) {
+              empImage = "";
+            }
+          }
+
+          showGeneralDialog(
+            barrierLabel: "Barrier",
+            barrierDismissible: false,
+            barrierColor: Colors.black.withOpacity(0.5),
+            transitionDuration: Duration(milliseconds: 250),
+            context: context,
+            pageBuilder: (_, __, ___) {
+              return _employeeInfoDialogBox(
+                  empName, empId, empDepartment, empImage);
+            },
+          ).then((value) async {
+            controller?.resumeCamera();
+            print("SOCKEHH" + value.toString());
+            if (value) {
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (BuildContext context) {
+                  return LoadingDialogBox();
+                },
+              );
+
+              print("TEST USER : USER WORK");
+              envUsedPassenger = dotenv.env['PUT_USED_USER']
+                  .replaceFirst('bus_job_info_id', busJobInfoId);
+              envUsedPassenger =
+                  envUsedPassenger.replaceFirst('user_id', dataId);
+              updateUsedPassenger = Uri.parse(envUsedPassenger);
+
+              var putPassengerListUrl =
+                  Uri.parse('${dotenv.env['BASE_API']}${updateUsedPassenger}');
+
+              var updateObj = {};
+
+              updateObj = {...updateObj, "route_poi_info_id": routePoiId};
+
+              var putRes =
+                  await putHttpWithToken(putPassengerListUrl, token, updateObj);
+
+              print("envUsedPassengerDebug " + putPassengerListUrl.toString());
+
+              print("envUsedPassengerDebug " + putRes);
+
+              Map<String, dynamic> getBusPoiResObj = jsonDecode(putRes);
+
+              if (getBusPoiResObj['resultCode'] == "40900") {
+                Navigator.pop(context); //pop dialog
+                await playLocalAssetFail();
+                var textErr = "";
+
+                textErr = "QR Code นี้แสกนแล้ว";
+                showGeneralDialog(
+                  barrierLabel: "Barrier",
+                  barrierDismissible: true,
+                  barrierColor: Colors.black.withOpacity(0.5),
+                  transitionDuration: Duration(milliseconds: 250),
+                  context: context,
+                  pageBuilder: (_, __, ___) {
+                    return ErrorScanDialogBox(textErr);
+                  },
+                ).then((val) {
+                  if (val) {
+                    controller?.resumeCamera();
+                  }
+                  controller?.resumeCamera();
+                });
+              } else if (getBusPoiResObj['resultCode'] == "40401") {
+                Navigator.pop(context); //pop dialog
+
+                await playLocalAssetFail();
+                showGeneralDialog(
+                  barrierLabel: "Barrier",
+                  barrierDismissible: true,
+                  barrierColor: Colors.black.withOpacity(0.5),
+                  transitionDuration: Duration(milliseconds: 250),
+                  context: context,
+                  pageBuilder: (_, __, ___) {
+                    return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
+                  },
+                ).then((val) {
+                  if (val) {
+                    controller?.resumeCamera();
+                  }
+                  controller?.resumeCamera();
+                });
+              } else if (getBusPoiResObj['resultCode'] == "40000") {
+                Navigator.pop(context); //pop dialog
+
+                await playLocalAssetFail();
+                showGeneralDialog(
+                  barrierLabel: "Barrier",
+                  barrierDismissible: true,
+                  barrierColor: Colors.black.withOpacity(0.5),
+                  transitionDuration: Duration(milliseconds: 250),
+                  context: context,
+                  pageBuilder: (_, __, ___) {
+                    return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
+                  },
+                ).then((val) {
+                  if (val) {
+                    controller?.resumeCamera();
+                  }
+                  controller?.resumeCamera();
+                });
+              } else {
+                await playLocalAsset();
+                setState(() {
+                  passengerMaxCount = passengerMaxCount + 1;
+                });
+                Navigator.pop(context);
+                await _getUsedPassenger(routePoiId);
+
+                //pop dialog
+                controller?.resumeCamera();
+              }
+            } else {
+              controller?.resumeCamera();
+            }
+            controller?.resumeCamera();
+          });
+        } else if (userVerifyResObj['resultCode'] == "40900") {
+          Navigator.pop(context); //pop dialog
+          await playLocalAssetFail();
+          var textErr = "";
+          if (userVerifyResObj['errorMessage'] == "FULLY_SEATS") {
+            textErr = "ไม่สามารถให้บริการได้ (รถเต็ม)";
+          } else {
+            textErr = "QR Code นี้แสกนแล้ว";
+          }
+
+          showGeneralDialog(
+            barrierLabel: "Barrier",
+            barrierDismissible: true,
+            barrierColor: Colors.black.withOpacity(0.5),
+            transitionDuration: Duration(milliseconds: 250),
+            context: context,
+            pageBuilder: (_, __, ___) {
+              return ErrorScanDialogBox(textErr);
+            },
+          ).then((val) {
+            if (val) {
+              controller?.resumeCamera();
+            }
+            controller?.resumeCamera();
+          });
+        } else if (userVerifyResObj['resultCode'] == "40401") {
+          Navigator.pop(context); //pop dialog
+
+          await playLocalAssetFail();
+          showGeneralDialog(
+            barrierLabel: "Barrier",
+            barrierDismissible: true,
+            barrierColor: Colors.black.withOpacity(0.5),
+            transitionDuration: Duration(milliseconds: 250),
+            context: context,
+            pageBuilder: (_, __, ___) {
+              return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
+            },
+          ).then((val) {
+            if (val) {
+              controller?.resumeCamera();
+            }
+            controller?.resumeCamera();
+          });
+        } else if (userVerifyResObj['resultCode'] == "40000") {
+          Navigator.pop(context); //pop dialog
+          await playLocalAssetFail();
+          showGeneralDialog(
+            barrierLabel: "Barrier",
+            barrierDismissible: true,
+            barrierColor: Colors.black.withOpacity(0.5),
+            transitionDuration: Duration(milliseconds: 250),
+            context: context,
+            pageBuilder: (_, __, ___) {
+              return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
+            },
+          ).then((val) {
+            if (val) {
+              controller?.resumeCamera();
+            }
+            controller?.resumeCamera();
+          });
+        } else {
+          Navigator.pop(context); //pop dialog
+          await playLocalAssetFail();
+          showGeneralDialog(
+            barrierLabel: "Barrier",
+            barrierDismissible: true,
+            barrierColor: Colors.black.withOpacity(0.5),
+            transitionDuration: Duration(milliseconds: 250),
+            context: context,
+            pageBuilder: (_, __, ___) {
+              return ErrorScanDialogBox('เกิดข้อผิดพลาด');
+            },
+          ).then((val) {
+            if (val) {
+              controller?.resumeCamera();
+            }
+            controller?.resumeCamera();
+          });
+        }
+
+        ///////////////////////////////
+
+      } else {
+        Navigator.pop(context);
+        await playLocalAssetFail();
+        showGeneralDialog(
+          barrierLabel: "Barrier",
+          barrierDismissible: true,
+          barrierColor: Colors.black.withOpacity(0.5),
+          transitionDuration: Duration(milliseconds: 250),
+          context: context,
+          pageBuilder: (_, __, ___) {
+            return ErrorScanDialogBox('รูปแบบ QR Code ไม่ถูกต้อง');
+          },
+        ).then((val) {
+          if (val) {
+            controller?.resumeCamera();
+          }
+          controller?.resumeCamera();
+        });
+      }
+
+      ///////////////////////////////////////////////////////////
+
+    } else {
+      await playLocalAssetFail();
       showGeneralDialog(
         barrierLabel: "Barrier",
         barrierDismissible: true,
@@ -398,7 +806,7 @@ class _ScanAndListState extends State<ScanAndList> {
         transitionDuration: Duration(milliseconds: 250),
         context: context,
         pageBuilder: (_, __, ___) {
-          return ErrorEmployeeInfoDialogBox('QRCode ซ้ำ กรุณาลองใหม่อีกครั้ง');
+          return ErrorScanDialogBox('รูปแบบ QR Code ไม่ถูกต้อง');
         },
       ).then((val) {
         if (val) {
@@ -406,16 +814,11 @@ class _ScanAndListState extends State<ScanAndList> {
         }
         controller?.resumeCamera();
       });
-    } else {
-      await _getUsedPassenger(routePoiId);
-
-      Navigator.pop(context); //pop dialog
-      controller?.resumeCamera();
     }
   }
 
   void _showDialog(context, text) async {
-    bool shouldUpdate = await showGeneralDialog(
+    /*   bool shouldUpdate = await showGeneralDialog(
       barrierLabel: "Barrier",
       barrierDismissible: true,
       barrierColor: Colors.black.withOpacity(0.5),
@@ -426,7 +829,7 @@ class _ScanAndListState extends State<ScanAndList> {
       },
     );
 
-    print(shouldUpdate);
+    print(shouldUpdate); */
   }
 
   void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
@@ -434,7 +837,7 @@ class _ScanAndListState extends State<ScanAndList> {
     print('object');
     if (!p) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('no Permission')),
+        SnackBar(content: Text('${dotenv.env['NO_PERMISSION_SCAN']}')),
       );
     }
   }
@@ -537,8 +940,14 @@ class _ScanAndListState extends State<ScanAndList> {
         ));
   }
 
-  Container _employeeInfoDialogBox(context, text) {
+  Container _employeeInfoDialogBox(empName, empId, empDepartment, empImage) {
     bool haveImage = false;
+    String baseImageUrl = dotenv.env['BASE_URL_PROFILE'];
+    if (empImage != "") {
+      haveImage = true;
+      empImage = baseImageUrl + empImage;
+    }
+    print("SOCKEHH" + empImage);
     return Container(
       alignment: Alignment.topCenter,
       child: Container(
@@ -561,22 +970,41 @@ class _ScanAndListState extends State<ScanAndList> {
             SizedBox(
               height: 10,
             ),
-            Expanded(
-              child: Container(
-                child: haveImage ? NetworkImage('' ?? "") : Container(),
-                margin:
-                    EdgeInsets.only(left: 50, right: 50, top: 15, bottom: 60),
-                decoration: BoxDecoration(
-                  color: Color.fromRGBO(218, 218, 218, 1),
-                  image: DecorationImage(
-                    image: AssetImage("assets/images/user.png"),
-                    fit: BoxFit.cover,
+            haveImage
+                ? Expanded(
+                    child: Container(
+                      child: haveImage
+                          ? Image.network(
+                              empImage,
+                            )
+                          : Container(),
+                      margin: EdgeInsets.only(
+                          left: 60, right: 60, top: 20, bottom: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                : Expanded(
+                    child: Container(
+                      child: haveImage
+                          ? Image.network(
+                              empImage,
+                            )
+                          : Container(),
+                      margin: EdgeInsets.only(
+                          left: 60, right: 60, top: 20, bottom: 40),
+                      decoration: BoxDecoration(
+                        color: Color.fromRGBO(218, 218, 218, 1),
+                        image: DecorationImage(
+                          image: AssetImage("assets/images/user.png"),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
             Text(
-              'นาย: ${text}',
+              '${empName}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: callDialogBlackTextStyle,
@@ -585,7 +1013,7 @@ class _ScanAndListState extends State<ScanAndList> {
               height: 2,
             ),
             Text(
-              'รหัสพนักงาน: TEST',
+              'รหัสพนักงาน: ${empId}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: callDialogBlackTextStyle,
@@ -594,7 +1022,7 @@ class _ScanAndListState extends State<ScanAndList> {
               height: 2,
             ),
             Text(
-              'แผนก: TEST',
+              'แผนก: ${empDepartment}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: callDialogBlackTextStyle,
@@ -608,8 +1036,8 @@ class _ScanAndListState extends State<ScanAndList> {
                   child: GestureDetector(
                       onTap: () {
                         Navigator.pop(context, false);
-                        _onCancel(context);
-                        controller?.resumeCamera();
+                        /*     _onCancel(context);
+                        controller?.resumeCamera(); */
                       },
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 5),
@@ -634,8 +1062,8 @@ class _ScanAndListState extends State<ScanAndList> {
                   child: GestureDetector(
                     onTap: () {
                       Navigator.pop(context, true);
-                      controller?.resumeCamera();
-                      _onConfirm(context);
+                      /*      controller?.resumeCamera();
+                      _onConfirm(context); */
                     },
                     child: Container(
                       padding: EdgeInsets.symmetric(vertical: 5),
@@ -764,8 +1192,8 @@ class _ScanAndListState extends State<ScanAndList> {
     );
   } */
 
-  Expanded _arrivedPassengerListPage(passengers) {
-    return Expanded(
+  Container _arrivedPassengerListPage(passengers) {
+    return Container(
         child: Container(
             margin: EdgeInsets.only(top: 10, right: 10, left: 10),
             child: Padding(

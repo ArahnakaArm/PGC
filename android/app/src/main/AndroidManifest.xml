@@ -7,8 +7,15 @@
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND" />
    <application
-        android:label="PGC"
-        android:icon="@mipmap/ic_launcher">
+        android:label="PCG Driver"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        
+        >
+        
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_launcher" />
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"

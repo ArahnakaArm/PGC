@@ -4,6 +4,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
+import 'package:pgc/model/notificationModel.dart';
 import 'package:pgc/screens/changepassword_screen.dart';
 import 'package:pgc/screens/exampleqr.dart';
 import 'package:pgc/screens/history.dart';
@@ -48,15 +50,27 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   localNotification.initialize(initialzationSettings);
   var androidDetails = new AndroidNotificationDetails(
-      "channelId", "channelName", "channelDescription",
-      importance: Importance.high);
+      "channelId", "Work Notifications", "Send Work Notification",
+      importance: Importance.high, channelShowBadge: true);
 
   var iosDetails = new IOSNotificationDetails();
   var generalNotificationDetails =
       new NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-  await localNotification.show(0, message.notification.title,
-      message.notification.body, generalNotificationDetails);
+  /*  final convertedData2 = json.decode(convertedData) as Map<String, dynamic>; */
+
+  await localNotification.show(0, message.data['title'], message.data['body'],
+      generalNotificationDetails);
+  await flutterLocalNotificationsPlugin.cancel(0);
+  bool res = await FlutterAppBadger.isAppBadgeSupported();
+  if (res) {
+    FlutterAppBadger.updateBadgeCount(1);
+
+    print("SUPPPP");
+  } else {
+    print("NOT SUPPPP");
+  }
+
   print('Handling a background message ${message.messageId}');
 }
 
@@ -77,7 +91,7 @@ Future main() async {
       'high_importance_channel', // id
       'High Importance Notifications', // title
       'This channel is used for important notifications.', // description
-      importance: Importance.high,
+      importance: Importance.max,
     );
 
     flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();

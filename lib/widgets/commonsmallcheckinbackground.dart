@@ -5,8 +5,11 @@ import 'package:pgc/utilities/constants.dart';
 class CommonSmallCheckInBackground extends StatelessWidget {
   final BuildContext ctx;
   String locationName;
+  int passengerMaxCounts = 0;
+  int passengerUsedCounts = 0;
 
-  CommonSmallCheckInBackground(this.ctx, this.locationName);
+  CommonSmallCheckInBackground(this.ctx, this.locationName,
+      this.passengerMaxCounts, this.passengerUsedCounts);
 
   @override
   Widget build(BuildContext context) {
@@ -46,14 +49,14 @@ class CommonSmallCheckInBackground extends StatelessWidget {
               ),
               SizedBox(height: 3),
               Text(
-                'รับ 0 คน จาก 8 คน',
+                'รับ ${this.passengerUsedCounts} คน จาก ${this.passengerMaxCounts} คน',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: commonSmallCheckinBoxTextStyle,
               )
             ],
           )),
-          _checkInButton(ctx)
+/*           _checkInButton(ctx) */
         ],
       ),
     );

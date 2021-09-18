@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:connectivity/connectivity.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -16,6 +17,7 @@ import 'package:pgc/widgets/profilebar.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/model/histories.dart';
 import 'package:pgc/widgets/profilebarwithdepartment.dart';
+import 'package:pgc/widgets/profilebarwithdepartmentnoalarm.dart';
 
 class History extends StatefulWidget {
   @override
@@ -25,13 +27,24 @@ class History extends StatefulWidget {
 class _HistoryState extends State<History> {
   BusListInfo busListRes;
   List<ResultDatum> busList = [];
+  List<ResultDatum> busListCancel = [];
   var isLoading = true;
   var isEmpty = false;
   bool isConnent = true;
-
+  var notiCounts = "0";
   @override
   void initState() {
     // TODO: implement initState
+    /*  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      if (mounted) {
+        print("NOTIC FROM " + context.widget.toStringShort());
+        setState(() {
+          notiCounts = (int.parse(notiCounts) + 1).toString();
+        });
+        final storage = new FlutterSecureStorage();
+        await storage.write(key: 'notiCounts', value: notiCounts);
+      }
+    }); */
     _checkInternet();
     super.initState();
   }
@@ -48,7 +61,7 @@ class _HistoryState extends State<History> {
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  ProfileBarWithDepartment(),
+                  ProfileBarWithDepartmentNoAlarm(),
                 ]),
           ),
           Container(
@@ -85,8 +98,12 @@ class _HistoryState extends State<History> {
                                               children: <Widget>[
                                                 GestureDetector(
                                                   onTap: () {
-                                                    _goHistoryInfo(busListItem
-                                                        .busJobInfoId);
+                                                    if (busListItem
+                                                            .busReserveStatusId ==
+                                                        "COMPLETED") {
+                                                      _goHistoryInfo(busListItem
+                                                          .busJobInfoId);
+                                                    }
                                                   },
                                                   child: Container(
                                                       height: 105,
@@ -152,16 +169,15 @@ class _HistoryState extends State<History> {
                                                                       decoration: BoxDecoration(
                                                                           borderRadius: BorderRadius.circular(
                                                                               8),
-                                                                          color: false
-                                                                              ? Color.fromRGBO(137, 137, 137,
-                                                                                  1)
-                                                                              : Color.fromRGBO(192, 192, 192,
-                                                                                  1)),
-                                                                      child:
-                                                                          Center(
+                                                                          color: busListItem.busReserveStatusId != "COMPLETED"
+                                                                              ? Colors.red
+                                                                              : Color.fromRGBO(192, 192, 192, 1)),
+                                                                      child: Center(
                                                                         child:
                                                                             Text(
-                                                                          'ให้บริการสำเร็จ',
+                                                                          busListItem.busReserveStatusId == "COMPLETED"
+                                                                              ? 'ให้บริการสำเร็จ'
+                                                                              : 'ยกเลิก',
                                                                           style: TextStyle(
                                                                               fontFamily: 'Athiti',
                                                                               fontSize: 11,
@@ -245,6 +261,14 @@ class _HistoryState extends State<History> {
     ));
   }
 
+  void _deleteNotification() async {
+    setState(() {
+      notiCounts = "0";
+    });
+    final storage = new FlutterSecureStorage();
+    await storage.write(key: 'notiCounts', value: notiCounts);
+  }
+
   Future<void> _getBusInfoList() async {
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
@@ -255,12 +279,28 @@ class _HistoryState extends State<History> {
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryString}');
     var res = await getHttpWithToken(getBusInfoListUrl, token);
 
+    var busStatusCancel = "CANCELLED";
+    var queryStringCancel =
+        '?bus_reserve_status_id=${busStatusCancel}&driver_id=${userId}';
+    var getBusInfoListCancelUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryStringCancel}');
+    var resCancel = await getHttpWithToken(getBusInfoListCancelUrl, token);
+
     setState(() {
       busList = (jsonDecode(res)['resultData'] as List)
           .map((i) => ResultDatum.fromJson(i))
           .toList();
 
+      busListCancel = (jsonDecode(resCancel)['resultData'] as List)
+          .map((i) => ResultDatum.fromJson(i))
+          .toList();
+      busList = [...busList, ...busListCancel];
       busList = ChangeDateFormatBusInfoList(busList);
+
+      Comparator<ResultDatum> sortByCreatedAt =
+          (a, b) => a.createdAt.compareTo(b.createdAt);
+      busList.sort(sortByCreatedAt);
+      busList = busList.reversed.toList();
       /* busList = []; */
       isLoading = false;
       if (busList.length == 0) {
@@ -270,6 +310,9 @@ class _HistoryState extends State<History> {
   }
 
   void _goHistoryInfo(busJobId) {
+    setState(() {
+      notiCounts = "0";
+    });
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -279,7 +322,7 @@ class _HistoryState extends State<History> {
         ),
       ),
     ).then((value) async {
-      await _getBusInfoList();
+      await _checkInternet();
     });
   }
 
@@ -295,8 +338,18 @@ class _HistoryState extends State<History> {
       });
     } //
     else {
+      await _getNotiCounts();
       await _getBusInfoList();
     }
+  }
+
+  Future<void> _getNotiCounts() async {
+    final storage = new FlutterSecureStorage();
+    String notiCountsStorage = await storage.read(key: 'notiCounts');
+    print("NOTIC FROM " + notiCountsStorage);
+    setState(() {
+      notiCounts = notiCountsStorage;
+    });
   }
 }
 

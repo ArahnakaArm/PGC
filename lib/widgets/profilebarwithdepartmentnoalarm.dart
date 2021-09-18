@@ -11,17 +11,16 @@ import 'package:pgc/utilities/constants.dart';
 import 'package:badges/badges.dart';
 import 'package:connectivity/connectivity.dart';
 
-class ProfileBarWithDepartment extends StatefulWidget {
+class ProfileBarWithDepartmentNoAlarm extends StatefulWidget {
   @override
-  _ProfileBarWithDepartmentState createState() =>
-      _ProfileBarWithDepartmentState();
+  _ProfileBarWithDepartmentNoAlarmState createState() =>
+      _ProfileBarWithDepartmentNoAlarmState();
 
   String notifinationCount;
-  ProfileBarWithDepartment(this.notifinationCount);
 }
 
-class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
-    with WidgetsBindingObserver {
+class _ProfileBarWithDepartmentNoAlarmState
+    extends State<ProfileBarWithDepartmentNoAlarm> with WidgetsBindingObserver {
   User user;
   String baseProfileUrl;
   bool haveImage = false;
@@ -113,34 +112,6 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
           ),
           Row(
             children: [
-              widget.notifinationCount != "0"
-                  ? Badge(
-                      position: BadgePosition.topEnd(top: -5, end: -6),
-                      toAnimate: false,
-                      shape: BadgeShape.circle,
-                      badgeColor: Color.fromRGBO(255, 0, 0, 1),
-                      borderRadius: BorderRadius.circular(8),
-                      badgeContent: Container(
-                        alignment: Alignment.center,
-                        child: Text(
-                          int.parse(widget.notifinationCount) > 99
-                              ? '99+'
-                              : '${widget.notifinationCount}',
-                          style: TextStyle(color: Colors.white, fontSize: 8),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.add_alert,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                    )
-                  : Icon(
-                      Icons.add_alert,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-              SizedBox(width: 10),
               GestureDetector(
                 onTap: () {
                   _goSettingScreen(context);

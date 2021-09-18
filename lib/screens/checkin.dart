@@ -27,6 +27,8 @@ class CheckIn extends StatefulWidget {
 }
 
 class _CheckInState extends State<CheckIn> {
+  int passengerMaxCounts = 0;
+  int passengerUsedCounts = 0;
   String status = '';
   PassDataModel passedData;
   var locationName = "";
@@ -43,6 +45,8 @@ class _CheckInState extends State<CheckIn> {
 
         locationName = passedData.locationName;
         status = passedData.status;
+        passengerMaxCounts = passedData.passengerCount;
+        passengerUsedCounts = passedData.passengerCountUsed;
       });
       _checkInternet(passedData.busJobPoiId);
       /*  _getBusJobPoiInfo(passedData.busJobPoiId); */
@@ -70,7 +74,8 @@ class _CheckInState extends State<CheckIn> {
                 child: Container(
                   child: Column(
                     children: <Widget>[
-                      CommonSmallCheckInBackground(context, locationName),
+                      CommonSmallCheckInBackground(context, locationName,
+                          passengerMaxCounts, passengerUsedCounts),
                       SizedBox(
                         height: 40,
                       ),
