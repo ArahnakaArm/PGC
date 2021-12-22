@@ -18,6 +18,8 @@ import 'package:pgc/responseModel/routeInfo.dart';
 import 'package:pgc/screens/checkin.dart';
 import 'package:pgc/screens/confirmfinishjob.dart';
 import 'package:pgc/screens/scanandlist.dart';
+import 'package:pgc/screens/scanandlistoutbound.dart';
+import 'package:pgc/screens/skip_screen.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/putHttpWithToken.dart';
 import 'package:pgc/services/utils/common.dart';
@@ -26,7 +28,9 @@ import 'package:pgc/widgets/background.dart';
 
 import 'package:pgc/widgets/commonloadingsmall.dart';
 import 'package:pgc/widgets/dialogbox/confirmCheckinDialogBox.dart';
+import 'package:pgc/widgets/dialogbox/confirmSkipDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/errorEmployeeInfoDialogBox.dart';
+import 'package:pgc/widgets/dialogbox/errorScanDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
 import 'package:pgc/widgets/notfoundbackground.dart';
 import 'package:pgc/widgets/profilebarwithdepartment.dart';
@@ -64,8 +68,11 @@ class _ProcessWorkState extends State<ProcessWork> {
   var isEmpty = false;
   var tripName = '';
   var originDestination = '';
+  var destination = "";
   var carPlate = '';
   var beginMiles = 0;
+  var reserveNumber = 0;
+  var arriveNumber = 0;
   var startDate = '';
   var tripType = '';
   var tripStatus = '';
@@ -77,6 +84,7 @@ class _ProcessWorkState extends State<ProcessWork> {
   int maxRadius = 0;
   var authResSocket;
   var notiCounts = "0";
+  var arrayOldLength = 0;
 
   @override
   void initState() {
@@ -140,7 +148,7 @@ class _ProcessWorkState extends State<ProcessWork> {
                   SizedBox(
                     height: 16,
                   ),
-                  _workInfoBox(110.0),
+                  _workInfoBox(130.0),
                   SizedBox(
                     height: 10,
                   ),
@@ -181,15 +189,18 @@ class _ProcessWorkState extends State<ProcessWork> {
       setState(() {
         tripName = busJobInfo.resultData.docNo;
         originDestination = busJobInfo.resultData.routeInfo.originRouteNameTh;
+        destination = busJobInfo.resultData.routeInfo.destinationRouteNameTh;
         carPlate = busJobInfo.resultData.carInfo.carPlate;
         beginMiles = busJobInfo.resultData.carMileageStart;
-        startDate = ChangeFormatDateToTH(busJobInfo.resultData.tripDatetime);
+        startDate = ChangeFormatDateToTH(
+            busJobInfo.resultData.tripDatetime.add(Duration(hours: 7)));
         tripType = busJobInfo.resultData.routeInfo.tripType;
         tripStatus = busJobInfo.resultData.busReserveStatusId;
+        reserveNumber = busJobInfo.resultData.numberOfReserved;
       });
 
       //////// GET REF ///////
-      var queryString = '?bus_job_info_id=${busJobInfoId}';
+      /*    var queryString = '?bus_job_info_id=${busJobInfoId}';
 
       var busRefUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['GET_REF_BUS_JOB_RESERVE']}${queryString}');
@@ -199,7 +210,7 @@ class _ProcessWorkState extends State<ProcessWork> {
       busRef = busRefFromJson(busRefRes);
 
       currentBusReserveInfoId = busRef.resultData[0].busReserveInfoId;
-
+ */
       //////// END GET REF /////
 
       ////////// GET ROUTE ID /////////
@@ -221,8 +232,11 @@ class _ProcessWorkState extends State<ProcessWork> {
           (a, b) => a.order.compareTo(b.order);
       routePoi.sort(sortByOrder);
       /*    routePoi.sort(sortByOrder); */
+      arriveNumber = 0;
       for (int i = 0; i < routePoi.length; i++) {
         var routePoiId = routePoi[i].routePoiInfoId;
+        print("-----------------1");
+
         var queryString =
             '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${routeId}';
 
@@ -233,47 +247,66 @@ class _ProcessWorkState extends State<ProcessWork> {
 
         Map<String, dynamic> busPoiRes = jsonDecode(busPoiResObj);
 
+        print("-----------------2" + busPoiUrl.toString());
+        print("-----------------2" + routePoiId.toString());
+        print("-----------------2" + busJobInfoId.toString());
+        print("-----------------2" + routeId.toString());
+        print("-----------------2");
+
+        print(busPoiRes['resultData'][0]['status']);
+
         routePoi[i].status = busPoiRes['resultData'][0]['status'];
-
-        if (i < routePoi.length - 1) {
-          arrStatus.add(routePoi[i].status);
-          /*  if (routePoi[i].status != "FINISHED") {
-            canFinishJob = false;
-          }
-
-          print("CHECK CAN FINISH " + routePoi[i].status.toString());
-          print("CHECK CAN FINISH " + canFinishJob.toString()); */
-        }
-
+        print("++++++++++" + busPoiRes['resultData'][0]['checkin_datetime']);
         if (busPoiRes['resultData'][0]['checkin_datetime'].toString() ==
-            "0001-01-01T00:00:00.000Z") {
+            "2001-01-01T00:00:00.000Z") {
           routePoi[i].checkInTime = "";
         } else {
-          routePoi[i].checkInTime = ChangeFormateDateTimeToTime(
-              busPoiRes['resultData'][0]['checkin_datetime'].toString());
+          DateTime dt =
+              DateTime.parse(busPoiRes['resultData'][0]['checkin_datetime'])
+                  .add(Duration(hours: 7));
+
+          routePoi[i].checkInTime = ChangeFormateDateTimeToTime(dt.toString());
         }
 
         var queryStringPassengerCount =
-            '?bus_job_info_id=${busJobInfoId}&route_poi_info_id=${routePoiId}';
+            '?bus_job_info_id=${busJobInfoId}&route_poi_info_id=${routePoiId}&exclude_passenger_status_id=CANCELED';
 
+        /*   print("+++++" + busJobInfoId);
+        print("+++++" + routePoiId); */
         var busPoiPassengerCountUrl = Uri.parse(
             '${dotenv.env['BASE_API']}${dotenv.env['GET_PASSENGER_COUNT']}${queryStringPassengerCount}');
 
         var busPoiPassengerCountResObj =
             await getHttpWithToken(busPoiPassengerCountUrl, token);
 
-        print("RESPONSE WITH HTTPss " + busPoiPassengerCountUrl.toString());
+        /*   print(
+            "RESPONSE WITH HTTPssdad " + busPoiPassengerCountResObj.toString());
+ */
 
-        Map<String, dynamic> busPoiPassengerCountRes =
-            jsonDecode(busPoiPassengerCountResObj);
-
-        if (busPoiPassengerCountRes['rowCount'] != 0) {
-          routePoi[i].passengerCount = busPoiPassengerCountRes['rowCount'] != 0
-              ? busPoiPassengerCountRes['rowCount']
-              : 0;
+        var busPoiPassengerCountRes =
+            jsonDecode(busPoiPassengerCountResObj)['rowCount'] as int;
+        routePoi[i].passengerCount = 0;
+        print("RESPONSE WITH HTTPsssssCount " +
+            busPoiPassengerCountRes.toString());
+        if (busPoiPassengerCountRes != 0) {
+          routePoi[i].passengerCount = busPoiPassengerCountRes;
         } else {
           routePoi[i].passengerCount = 0;
         }
+
+        /*  print("RESPONSE WITH HTTPsssss " + routePoiId.toString());
+        print("RESPONSE WITH HTTPsssss " + busPoiPassengerCountRes.toString()); */
+
+        /*  print("RESPONSE WITH HTTPss " +
+            busPoiPassengerCountRes['resultData'][0]['route_poi_info_count']); */
+        /*  if (busPoiPassengerCountRes['resultData'].length != 0) {
+          routePoi[i].passengerCount =
+              busPoiPassengerCountRes['resultData'][0]['route_poi_info_count'];
+        } else {
+          routePoi[i].passengerCount = 0;
+        }
+ */
+        /*    print("RESPONSE WITH HTTPss " + routePoi[i].passengerCount.toString()); */
 
         var statusgUsedPassenger = "USED";
         var queryStringUsedPassenger =
@@ -287,12 +320,38 @@ class _ProcessWorkState extends State<ProcessWork> {
         routePoi[i].passengerCountUsed =
             (jsonDecode(resUsedPassenger)['rowCount'] as int);
 
+        arriveNumber = arriveNumber + routePoi[i].passengerCountUsed;
+
         print(
             "RESPONSE WITH HTTP " + routePoi[i].passengerCountUsed.toString());
         print("RESPONSE WITH HTTP " + routePoiId.toString());
         print("RESPONSE WITH HTTP " + busJobInfoId.toString());
+        if (i < routePoi.length - 1 && routePoi[i].passengerCount != 0) {
+          arrStatus.add(routePoi[i].status);
+          /*  if (routePoi[i].status != "FINISHED") {
+            canFinishJob = false;
+          }
+
+          print("CHECK CAN FINISH " + routePoi[i].status.toString());
+          print("CHECK CAN FINISH " + canFinishJob.toString()); */
+        } else if (i == 0 && tripType == "outbound") {
+          arrStatus.add(routePoi[i].status);
+        }
+
+        print("DDASDADASDASD " + routePoi[i].order.toString());
       }
-      print("CHECK CAN FINISH " + arrStatus.toString());
+
+      arrayOldLength = routePoi.length;
+
+      if (tripType == "inbound") {
+        routePoi.removeWhere((item) =>
+            (item.passengerCount == 0 && item.order != (routePoi.length - 1)));
+      } else if (tripType == "outbound") {
+        routePoi.removeWhere((item) => (item.passengerCount == 0 &&
+            item.order != (routePoi.length - 1) &&
+            item.order != 0));
+      }
+
       if (arrStatus.contains("IDLE") || arrStatus.contains("CHECKED-IN")) {
         print("CHECK CAN FINISH " + "CANNOT");
         canFinishJob = false;
@@ -301,11 +360,15 @@ class _ProcessWorkState extends State<ProcessWork> {
         canFinishJob = true;
       }
 
+      for (int i = 0; i < routePoi.length; i++) {
+        routePoi[i].order = i;
+      }
       busJobInfoId = busJobInfoId;
       currentRouteInfoId = routeId;
 
       setState(() {
         routePoi = routePoi.toList();
+
         /*    routePoi.sort(sortByOrder); */
         isLoading = false;
         if (routePoi.length == 0) {
@@ -316,8 +379,11 @@ class _ProcessWorkState extends State<ProcessWork> {
     } catch (e) {
       print("RESPONSE WITH HTTP " + e.toString());
       if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+          SnackBar(content: Text('${dotenv.env['ERROR_TEXT']}')),
         );
       }
 
@@ -483,11 +549,41 @@ class _ProcessWorkState extends State<ProcessWork> {
               children: <Widget>[
                 Row(
                   children: <Widget>[
+                    Text(
+                      '•',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Athiti',
+                        color: tripType == 'inbound'
+                            ? Color.fromRGBO(92, 184, 92, 1)
+                            : Color.fromRGBO(255, 0, 0, 1),
+                        fontSize: 13,
+                        height: 1.2,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 3,
+                    ),
+                    tripType == 'inbound'
+                        ? Image.asset(
+                            'assets/images/in.png',
+                            width: 17,
+                            height: 15,
+                          )
+                        : Image.asset(
+                            'assets/images/out.png',
+                            width: 17,
+                            height: 15,
+                          ),
+                    SizedBox(
+                      width: 3,
+                    ),
                     Expanded(
                         child: Text(
                       tripType == 'inbound'
-                          ? '• รับเข้า ${originDestination}' ?? ""
-                          : '• รับออก ${originDestination}' ?? "",
+                          ? ' ${originDestination} - ${destination}' ?? ""
+                          : ' ${originDestination} - ${destination}' ?? "",
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -506,8 +602,26 @@ class _ProcessWorkState extends State<ProcessWork> {
                 ),
                 Row(
                   children: <Widget>[
+                    Text('•',
+                        style: workInfoTextStyle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    SizedBox(
+                      width: 3,
+                    ),
+                    Container(
+                      margin: EdgeInsets.only(top: 0),
+                      child: Image.asset(
+                        'assets/images/car-plate.png',
+                        width: 18,
+                        height: 18,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 3,
+                    ),
                     Expanded(
-                        child: Text('• ทะเบียนรถ: ${carPlate}' ?? "",
+                        child: Text(' ${carPlate}' ?? "",
                             style: workInfoTextStyle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis))
@@ -518,11 +632,66 @@ class _ProcessWorkState extends State<ProcessWork> {
                 ),
                 Row(
                   children: <Widget>[
+                    Text('•',
+                        style: workInfoTextStyle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    SizedBox(
+                      width: 3,
+                    ),
+                    Container(
+                      margin: EdgeInsets.only(top: 2),
+                      child: Image.asset(
+                        'assets/images/schedule.png',
+                        width: 18,
+                        height: 18,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 3,
+                    ),
                     Expanded(
-                        child: Text('• วันที่ปฏิบัติงาน: ${startDate}' ?? "",
+                        child: Text(' ${startDate}' ?? "",
                             style: workInfoTextStyle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis))
+                  ],
+                ),
+                SizedBox(
+                  height: 3,
+                ),
+                Row(
+                  children: <Widget>[
+                    Text(
+                      '•',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'Athiti',
+                      ),
+                    ),
+                    SizedBox(
+                      width: 3,
+                    ),
+                    Container(
+                      margin: EdgeInsets.only(top: 2),
+                      child: Image.asset(
+                        'assets/images/man.png',
+                        width: 18,
+                        height: 18,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 3,
+                    ),
+                    Expanded(
+                        child: Text(
+                      ' ${arriveNumber}/${reserveNumber} คน',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: workInfoTextStyle,
+                    ))
                   ],
                 )
               ],
@@ -597,6 +766,8 @@ class _ProcessWorkState extends State<ProcessWork> {
         return _waitingBoxFirst(context, content);
       } else if (content.status == 'FINISHED') {
         return _finishedBoxFirst(context, content);
+      } else if (content.status == 'SKIP') {
+        return _skipingBoxFirst(context, content);
       }
     } else if (content.order == routePoi.length - 1) {
       return _successBox(context, content);
@@ -607,6 +778,8 @@ class _ProcessWorkState extends State<ProcessWork> {
         return _waitingBox(context, content);
       } else if (content.status == 'FINISHED') {
         return _finishedBox(context, content);
+      } else if (content.status == 'SKIP') {
+        return _skipingBox(context, content);
       }
     }
 
@@ -657,7 +830,7 @@ class _ProcessWorkState extends State<ProcessWork> {
   }
 
   void _goCheckIn(context, RoutePoiInfo content, status) async {
-    if (!canFinishJob && content.order == routePoi.length - 1) {
+    if ((!canFinishJob && content.order == routePoi.length - 1)) {
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -698,7 +871,7 @@ class _ProcessWorkState extends State<ProcessWork> {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return LoadingDialogBox();
+          return WillPopScope(onWillPop: () {}, child: LoadingDialogBox());
         },
       );
       try {
@@ -709,30 +882,86 @@ class _ProcessWorkState extends State<ProcessWork> {
             pos.longitude,
             double.parse(content.latitude),
             double.parse(content.longitude));
+        print("diffhhh" + diffDistance.toString());
+        print("diffhhh" + maxRadius.toString());
         if (diffDistance < maxRadius) {
-          var busJobPoiId = await _updateJobPoiStatus(content);
+          var busJobPoiId = await _updateJobPoiStatus(content, "CHECKED-IN");
           Navigator.pop(context); //pop dialog
           setState(() {
             notiCounts = "0";
           });
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ScanAndList(),
-              settings: RouteSettings(
-                arguments: PassDataModel(
-                    busJobPoiId,
-                    status,
-                    content.locationNameTh,
-                    content.passengerCount,
-                    content.passengerCountUsed),
+          if (tripType == "inbound") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ScanAndList(),
+                settings: RouteSettings(
+                  arguments: PassDataModel(
+                      busJobPoiId,
+                      status,
+                      content.locationNameTh,
+                      content.passengerCount,
+                      content.passengerCountUsed),
+                ),
               ),
-            ),
-          ).then((value) async {
-            await _checkInternet();
-          });
+            ).then((value) async {
+              await _checkInternet();
+            });
+          } else if (tripType == "outbound") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ScanAndListOutBound(),
+                settings: RouteSettings(
+                  arguments: PassDataModel(
+                      busJobPoiId,
+                      status,
+                      content.locationNameTh,
+                      content.passengerCount,
+                      content.passengerCountUsed),
+                ),
+              ),
+            ).then((value) async {
+              await _checkInternet();
+            });
+          }
         } else {
-          print("deBugStatus " + status);
+          print(diffDistance);
+          print(maxRadius);
+          Navigator.pop(context);
+
+          showGeneralDialog(
+            barrierLabel: "Barrier",
+            barrierDismissible: true,
+            barrierColor: Colors.black.withOpacity(0.5),
+            transitionDuration: Duration(milliseconds: 250),
+            context: context,
+            pageBuilder: (_, __, ___) {
+              return ConfirmDialogBox('ไม่อยู่ในระยะที่กำหนด');
+            },
+          ).then((value) async {
+            if (value == true) {
+              var busJobPoiId = await _getJobPoi(content);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SkipScreen(),
+                  settings: RouteSettings(
+                    arguments: PassDataModel(
+                        busJobPoiId,
+                        status,
+                        content.locationNameTh,
+                        content.passengerCount,
+                        content.passengerCountUsed),
+                  ),
+                ),
+              ).then((value) async {
+                await _checkInternet();
+              });
+            } else {}
+          });
+
+          /*    print("deBugStatus " + status);
           var busJobPoiId = await _getJobPoi(content);
           Navigator.pop(context); //pop dialog
           setState(() {
@@ -753,7 +982,7 @@ class _ProcessWorkState extends State<ProcessWork> {
             ),
           ).then((value) async {
             await _checkInternet();
-          });
+          }); */
         }
       } catch (e) {
         Navigator.pop(context);
@@ -776,22 +1005,42 @@ class _ProcessWorkState extends State<ProcessWork> {
       setState(() {
         notiCounts = "0";
       }); //pop dialog
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ScanAndList(),
-          settings: RouteSettings(
-            arguments: PassDataModel(
-                busJobPoiId,
-                status,
-                content.locationNameTh,
-                content.passengerCount,
-                content.passengerCountUsed),
+
+      if (tripType == "inbound") {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ScanAndList(),
+            settings: RouteSettings(
+              arguments: PassDataModel(
+                  busJobPoiId,
+                  status,
+                  content.locationNameTh,
+                  content.passengerCount,
+                  content.passengerCountUsed),
+            ),
           ),
-        ),
-      ).then((value) async {
-        await _checkInternet();
-      });
+        ).then((value) async {
+          await _checkInternet();
+        });
+      } else if (tripType == "outbound") {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ScanAndListOutBound(),
+            settings: RouteSettings(
+              arguments: PassDataModel(
+                  busJobPoiId,
+                  status,
+                  content.locationNameTh,
+                  content.passengerCount,
+                  content.passengerCountUsed),
+            ),
+          ),
+        ).then((value) async {
+          await _checkInternet();
+        });
+      }
     }
 
 /*   Navigator.push(
@@ -805,7 +1054,8 @@ class _ProcessWorkState extends State<ProcessWork> {
   ); */
   }
 
-  Future<String> _updateJobPoiStatus(RoutePoiInfo content) async {
+  Future<String> _updateJobPoiStatus(RoutePoiInfo content, String status,
+      [String skipReason]) async {
     ///////// GET BUSJOBPOI ID //////////
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
@@ -828,18 +1078,25 @@ class _ProcessWorkState extends State<ProcessWork> {
     ///   UPDATE BUSJOBPOI ///////
     ///
     DateTime now = new DateTime.now();
-    String isoDate = now.toIso8601String() + 'Z';
+    String isoDate = now.subtract(Duration(hours: 7)).toIso8601String() + 'Z';
     var updatebusPoiUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_JOB_POI']}/${busJobPoiId}');
+    var statusToUpdate = status;
     var updateBusPoiObj = {
       "bus_job_info_id": busJobInfoId,
       "route_info_id": currentRouteInfoId,
       "route_poi_info_id": routePoiId,
       "checkin_datetime": isoDate,
-      "status": "CHECKED-IN"
+      "status": statusToUpdate
     };
+    if (statusToUpdate == "SKIP") {
+      updateBusPoiObj["skip_reason"] = skipReason;
+    }
+
     var putPoiResObj =
         await putHttpWithToken(updatebusPoiUrl, token, updateBusPoiObj);
+
+    print("++++++++++++++++++++++++" + putPoiResObj.toString());
 
     ///   END UPDATE BUSJOBPOI ///////
 
@@ -926,7 +1183,10 @@ class _ProcessWorkState extends State<ProcessWork> {
                 _verticleLine(),
               ],
             ),
-            _processInfo(content),
+            if (content.order == 0 && tripType == "outbound")
+              _processInfoFirstOutBound(content)
+            else
+              _processInfo(content),
             _processTime(content.checkInTime)
           ],
         ),
@@ -1003,12 +1263,40 @@ class _ProcessWorkState extends State<ProcessWork> {
               children: <Widget>[
                 _verticleWhiteLine(),
                 _circleImage(10.0, 10.0, 'assets/images/hourglass.png',
+                    Color.fromRGBO(240, 173, 78, 1)),
+                _verticleLine()
+              ],
+            ),
+            if (content.order == 0 && tripType == "outbound")
+              _processInfoFirstOutBound(content)
+            else
+              _processInfo(content),
+            _processTime(content.checkInTime)
+          ],
+        ),
+      ),
+    );
+  }
+
+  GestureDetector _skipingBoxFirst(context, RoutePoiInfo content) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {},
+      child: Container(
+        height: 70,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Column(
+              children: <Widget>[
+                _verticleWhiteLine(),
+                _circleImage(9.0, 9.0, 'assets/images/skip.png',
                     Color.fromRGBO(92, 184, 92, 1)),
                 _verticleLine()
               ],
             ),
             _processInfo(content),
-            _processTime(content.checkInTime)
+            _processSkip()
           ],
         ),
       ),
@@ -1030,12 +1318,37 @@ class _ProcessWorkState extends State<ProcessWork> {
               children: <Widget>[
                 _verticleLine(),
                 _circleImage(10.0, 10.0, 'assets/images/hourglass.png',
-                    Color.fromRGBO(92, 184, 92, 1)),
+                    Color.fromRGBO(240, 173, 78, 1)),
                 _verticleLine()
               ],
             ),
             _processInfo(content),
             _processTime(content.checkInTime)
+          ],
+        ),
+      ),
+    );
+  }
+
+  GestureDetector _skipingBox(context, RoutePoiInfo content) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {},
+      child: Container(
+        height: 70,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Column(
+              children: <Widget>[
+                _verticleLine(),
+                _circleImage(9.0, 9.0, 'assets/images/skip.png',
+                    Color.fromRGBO(92, 184, 92, 1)),
+                _verticleLine()
+              ],
+            ),
+            _processInfo(content),
+            _processSkip()
           ],
         ),
       ),
@@ -1060,7 +1373,10 @@ class _ProcessWorkState extends State<ProcessWork> {
                 _verticleLine()
               ],
             ),
-            _processInfo(content),
+            if (content.order == 0 && tripType == "outbound")
+              _processInfoFirstOutBound(content)
+            else
+              _processInfo(content),
             _processTime(content.checkInTime)
           ],
         ),
@@ -1186,10 +1502,38 @@ class _ProcessWorkState extends State<ProcessWork> {
             maxLines: 1,
           ),
           Text(
-            'รับ ${content.passengerCountUsed} คน จาก ${content.passengerCount} คน',
+            tripType == 'inbound'
+                ? 'รับ ${content.passengerCountUsed} คน จาก ${content.passengerCount} คน'
+                : 'ส่ง ${content.passengerCount} คน',
             style: processBoxSubHeaderTextStyle,
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
+          )
+        ],
+      ),
+    ));
+  }
+
+  Expanded _processInfoFirstOutBound(RoutePoiInfo content) {
+    return Expanded(
+        child: Container(
+      padding: EdgeInsets.only(left: 10, top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            content.locationNameTh ?? '',
+            style: processBoxHeaderTextStyle,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+          FittedBox(
+            child: Text(
+              'จุดเริ่มต้น คลิกเพื่อสแกน',
+              style: processBoxSubHeaderTextStyle,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           )
         ],
       ),
@@ -1209,6 +1553,14 @@ class _ProcessWorkState extends State<ProcessWork> {
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),
+          tripType == 'outbound'
+              ? Text(
+                  'ส่ง ${content.passengerCount} คน',
+                  style: processBoxSubHeaderTextStyle,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                )
+              : Container()
         ],
       ),
     ));
@@ -1218,7 +1570,17 @@ class _ProcessWorkState extends State<ProcessWork> {
     return Container(
       padding: EdgeInsets.only(top: 16),
       child: Text(
-        time != "00:00" ? 'Checkin: ${time}' : "",
+        time != "" ? 'Checkin: ${time}' : "",
+        style: timeTextStyle,
+      ),
+    );
+  }
+
+  Container _processSkip() {
+    return Container(
+      padding: EdgeInsets.only(top: 16),
+      child: Text(
+        'ข้าม',
         style: timeTextStyle,
       ),
     );

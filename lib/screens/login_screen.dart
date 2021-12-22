@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pgc/responseModel/auth.dart';
+import 'package:pgc/responseModel/permissionList.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/postHttp.dart';
 import 'package:pgc/utilities/constants.dart';
@@ -218,6 +219,8 @@ class _LogInScreenState extends State<LogInScreen> {
 
       Map<String, dynamic> authResObj = jsonDecode(authRes);
 
+      print("Prod Debug" + authResObj.toString());
+
       ///////////// END AUTH /////////////////
 
       if (authResObj['resultCode'] == '40101' ||
@@ -241,7 +244,7 @@ class _LogInScreenState extends State<LogInScreen> {
         Map<String, dynamic> getUserByMeResObj = jsonDecode(userByMeRes);
 
         /////////////// END GET_USER_BY_ME //////////////
-
+        print("Prod Debug" + getUserByMeResObj.toString());
         /////////////// GET_USER_PERMISSION //////////////
         var userId = getUserByMeResObj['resultData']['user_id'];
         var profileImageUrl =
@@ -256,24 +259,38 @@ class _LogInScreenState extends State<LogInScreen> {
 
         var getUserPermissionRes =
             await getHttpWithToken(getUserPermissionUrl, token);
+        print("Prod Debug LIST" + getUserPermissionRes.toString());
+        List<PermissionResult> permissionList = [];
 
-        Map<String, dynamic> getUserPermissionObj =
-            jsonDecode(getUserPermissionRes);
+        print("Prod Debug" + permissionList.toString());
+        permissionList =
+            (jsonDecode(getUserPermissionRes)['resultData'] as List)
+                .map((i) => PermissionResult.fromJson(i))
+                .toList();
 
-        var userPermissionId = getUserPermissionObj['resultData'][0]
+        print("Prod Debug LIST" + permissionList.toString());
+
+        var permissionListCheck = permissionList.where((item) =>
+            item.permissionId == "BUS_BOOKING_SYS" &&
+            item.permissionRoleId == "BUS_BOOKING_SYS:DRIVER");
+
+        print("Prod Debug LIST " + permissionListCheck.length.toString());
+
+/* 
+        var userPermissionId = getUserPermissionObj['resultData'][1]
             ['permission_info']['permission_id'];
 
-        var userPermissionRoleId = getUserPermissionObj['resultData'][0]
+        var userPermissionRoleId = getUserPermissionObj['resultData'][1]
             ['permission_role_info']['permission_role_id'];
-
+ */
         /////////////// END GET_USER_PERMISSION //////////////
 
         if (getUserByMeResObj['resultData']['user_state_id'] != 'ACTIVE') {
-          /*  EasyLoading.showError('บัญชีของของท่านถูกระงับ โปรดติดต่อผู้ดูแลระบบ'); */
+          EasyLoading.showError(
+              'บัญชีของของท่านถูกระงับ โปรดติดต่อผู้ดูแลระบบ');
           popped('บัญชีของของท่านถูกระงับ โปรดติดต่อผู้ดูแลระบบ', ctx);
           _btnController.reset();
-        } else if (userPermissionId != 'BUS_BOOKING_SYS' ||
-            userPermissionRoleId != 'BUS_BOOKING_SYS:DRIVER') {
+        } else if (permissionListCheck.length == 0) {
           /*   EasyLoading.showError(
             'บัญชีของท่านไม่มีสิทธิ์การใช้งาน โปรดติดต่อผู้ดูแลระบบ'); */
           popped('บัญชีของท่านไม่มีสิทธิ์การใช้งาน โปรดติดต่อผู้ดูแลระบบ', ctx);
@@ -301,6 +318,7 @@ class _LogInScreenState extends State<LogInScreen> {
         _btnController.reset();
       }
     } catch (e) {
+      print("Prod Debug LIST" + e.toString());
       popped('${dotenv.env['NO_INTERNET_CONNECTION']}', ctx);
       _btnController.reset();
     }

@@ -4,12 +4,15 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pgc/responseModel/user.dart';
 import 'package:pgc/screens/setting_screen.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
+import 'package:pgc/services/http/patchHttpWithToken.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:badges/badges.dart';
 import 'package:connectivity/connectivity.dart';
+import 'package:http/http.dart' as httpp;
 
 class ProfileBarWithDepartmentNoAlarm extends StatefulWidget {
   @override
@@ -29,7 +32,7 @@ class _ProfileBarWithDepartmentNoAlarmState
   var profileUrl = "";
   var department;
   bool isConnect = true;
-
+  final ImagePicker _picker = ImagePicker();
   @override
   void initState() {
     // TODO: implement initState
@@ -53,18 +56,22 @@ class _ProfileBarWithDepartmentNoAlarmState
           Expanded(
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 23.0,
-                  backgroundImage: isConnect
-                      ? haveImage
-                          ? NetworkImage(profileUrl ?? "")
+                GestureDetector(
+                    onTap: () {
+                      _openBottomSheet();
+                    },
+                    child: CircleAvatar(
+                      radius: 23.0,
+                      backgroundImage: isConnect
+                          ? haveImage
+                              ? NetworkImage(profileUrl ?? "")
+                              : AssetImage(
+                                  'assets/images/user.png',
+                                )
                           : AssetImage(
                               'assets/images/user.png',
-                            )
-                      : AssetImage(
-                          'assets/images/user.png',
-                        ),
-                ),
+                            ),
+                    )),
                 SizedBox(width: 15),
                 Expanded(
                   child: Column(
@@ -100,7 +107,7 @@ class _ProfileBarWithDepartmentNoAlarmState
                     style: profileNameStyle,
                   ) */
                       Text(
-                        "แผนก: ${department ?? ""}",
+                        "${department ?? ""}",
                         style: profileNameStyle,
                         overflow: TextOverflow.ellipsis,
                       )
@@ -135,6 +142,103 @@ class _ProfileBarWithDepartmentNoAlarmState
       //
     } else {
       isConnect = false;
+    }
+  }
+
+  void _openBottomSheet() {
+    showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return _bottomSheet();
+        });
+  }
+
+  Column _bottomSheet() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        ListTile(
+          leading: new Icon(Icons.photo),
+          title: new Text('เลือกรูปภาพ'),
+          onTap: () {
+            Navigator.pop(context);
+            _pickImage(ImageSource.gallery);
+          },
+        ),
+        ListTile(
+          leading: new Icon(Icons.camera_alt),
+          title: new Text('ถ่ายรูป'),
+          onTap: () {
+            Navigator.pop(context);
+            _pickImage(ImageSource.camera);
+          },
+        ),
+        ListTile(
+          leading: new Icon(Icons.cancel),
+          title: new Text('ยกเลิก'),
+          onTap: () {
+            Navigator.pop(context);
+          },
+        ),
+      ],
+    );
+  }
+
+  void _pickImage(src) async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+
+    try {
+      final XFile photo = await _picker.pickImage(source: src);
+      if (photo == null) {
+        return;
+      }
+      Map<String, String> headers = {HttpHeaders.authorizationHeader: token};
+      Uri uri = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['POST_IMAGE_USER']}');
+      httpp.MultipartRequest request = httpp.MultipartRequest('POST', uri);
+
+      request.files.add(await httpp.MultipartFile.fromPath(
+        'file',
+        photo.path,
+      ));
+
+      request.headers.addAll(headers);
+
+      httpp.StreamedResponse response = await request.send();
+      var responseImageUpload = await httpp.Response.fromStream(response);
+
+      Map<String, dynamic> uploadImageObjRes =
+          jsonDecode(responseImageUpload.body);
+
+      var imagePath = uploadImageObjRes['resultData']['location'];
+
+      //////////////////////// UPDATE USER //////////////////////////
+
+      var meUrl = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
+
+      var res = await patchHttpWithToken(
+          meUrl, token, {"image_profile_file": imagePath.toString()});
+
+      ///////////////////////////////////////////////////////////////
+      setState(() {
+        profileUrl = /* dotenv.env['BASE_URL_PROFILE'] +  */ imagePath;
+      });
+
+      await storage.write(key: 'profileUrl', value: imagePath);
+    } catch (e) {
+      print("RESPONSE WITH HTTP " + e.toString());
+      if (e.toString() ==
+          "PlatformException(camera_access_denied, The user did not allow camera access., null, null)") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('กรุณาอนุญาติการใช้กล้อง')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')),
+        );
+      }
     }
   }
 
@@ -201,7 +305,7 @@ class _ProfileBarWithDepartmentNoAlarmState
 
         if (profileUrlTh != null || profileUrlTh != '') {
           haveImage = true;
-          profileUrl = dotenv.env['BASE_URL_PROFILE'] + profileUrlTh;
+          profileUrl = /*  dotenv.env['BASE_URL_PROFILE'] + */ profileUrlTh;
         } else {
           haveImage = false;
           profileUrl = "";

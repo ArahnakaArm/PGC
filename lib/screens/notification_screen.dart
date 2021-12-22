@@ -15,6 +15,7 @@ import 'package:pgc/services/utils/currentLocation.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/widgets/commonloading.dart';
 import 'package:pgc/widgets/dialogbox/confirmWorkDialogBox.dart';
+import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
 import 'package:pgc/widgets/nointernetbackground.dart';
 import 'package:pgc/widgets/notfoundbackground.dart';
 import 'package:pgc/widgets/profilebar.dart';
@@ -36,6 +37,7 @@ class _NotificationScreenState extends State<NotificationScreen>
   var isEmpty = false;
   bool isConnent = true;
   List<ResultNotificationList> notificationList = [];
+  List<ResultNotificationList> notificationListUnread = [];
   var notificationCounts = "0";
   void _changePage(int pageNum) {
     setState(() {});
@@ -133,6 +135,78 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
   }
 
+  Future<void> _doUpdateNotiList() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return WillPopScope(onWillPop: () {}, child: LoadingDialogBox());
+      },
+    );
+    await _getNotificationListUnreadAndUpdate();
+
+    Navigator.pop(context);
+  }
+
+  Future<void> _getNotificationListUnreadAndUpdate() async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+    String userId = await storage.read(key: 'userId');
+
+    var queryString = '?receiver_id=${userId}&offset=0&limit=10&is_read=false';
+    var getNotificationListUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['GET_NOTIFICATION']}${queryString}');
+
+    try {
+      var res = await getHttpWithToken(getNotificationListUrl, token);
+
+      String resultCode = (jsonDecode(res)['resultCode']);
+
+      if (resultCode == "50000") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ไม่สามารถโหลดข้อมูลได้')),
+        );
+        isLoading = false;
+      } else {
+        notificationListUnread = (jsonDecode(res)['resultData'] as List)
+            .map((i) => ResultNotificationList.fromJson(i))
+            .toList();
+
+        /* busList = []; */
+      }
+      for (int i = 0; i < notificationListUnread.length; i++) {
+        try {
+          var updateNotificationObj = {
+            "receiver_id": notificationListUnread[i].receiverId,
+            "text": notificationListUnread[i].notiText,
+            "detail": notificationListUnread[i].notiDetail,
+            "is_read": "true"
+          };
+
+          var putNotificationUrl = Uri.parse(
+              '${dotenv.env['BASE_API']}${dotenv.env['GET_NOTIFICATION']}/${notificationListUnread[i].notificationId}');
+
+          var res = await putHttpWithToken(
+              putNotificationUrl, token, updateNotificationObj);
+        } catch (e) {
+          print(e);
+        }
+        setState(() {
+          notificationList[i].isRead = "true";
+        });
+      }
+    } catch (e) {
+      print(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+      );
+      setState(() {
+        isLoading = false;
+        isEmpty = true;
+      });
+    }
+  }
+
   Container _notificationList() {
     return Container(
       padding: EdgeInsets.only(left: 20.0, right: 20.0, top: 20),
@@ -149,6 +223,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               'รายการแจ้งเตือน',
               style: commonHeaderLabelStyle,
             ),
+            _doingWorkButton(context)
           ],
         ),
         SizedBox(
@@ -265,6 +340,29 @@ class _NotificationScreenState extends State<NotificationScreen>
                                 })))
       ]),
     );
+  }
+
+  Expanded _doingWorkButton(context) {
+    return Expanded(
+        child: GestureDetector(
+      onTap: () {
+        _doUpdateNotiList();
+/*       _goProgess(context); */
+      },
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Color.fromRGBO(240, 173, 78, 1)),
+          child: Text(
+            'อ่านทั้งหมด',
+            style: commonHeaderButtonDoingTextStyle,
+          ),
+        ),
+      ),
+    ));
   }
 
   void _checkInternet() async {

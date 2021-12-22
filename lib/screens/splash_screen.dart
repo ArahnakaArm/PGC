@@ -163,9 +163,8 @@ class _SplashScreenState extends State<SplashScreen>
                 MaterialPageRoute(builder: (context) => MainMenuScreen()),
               ));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
-      );
+      print("Prod Debug" + e.toString());
+      _goLogin();
     }
   }
 }

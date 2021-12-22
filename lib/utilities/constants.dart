@@ -194,6 +194,9 @@ final backPressTextStyle =
 final checkInReminderTextStyle =
     TextStyle(color: Colors.black, fontSize: 22, fontFamily: 'Athiti');
 
+final skipDropdownTextStyle =
+    TextStyle(color: Colors.black, fontSize: 18, fontFamily: 'Athiti');
+
 final checkInButtonTextStyle =
     TextStyle(color: Colors.white, fontSize: 14, fontFamily: 'Athiti');
 

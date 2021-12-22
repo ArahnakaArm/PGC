@@ -253,7 +253,7 @@ class _ScanAndListState extends State<ScanAndList> {
     else {
       _getNotiCounts();
       await _getBusJobPoiInfo(busJobPoiId);
-      await _getUsedPassenger(routePoiId);
+      await _getUsedPassengerInit(routePoiId);
     }
   }
 
@@ -270,7 +270,7 @@ class _ScanAndListState extends State<ScanAndList> {
 
     var busJobPoiCheckinTime =
         getBusPoiResObj['resultData']['checkin_datetime'];
-
+    DateTime dt = DateTime.parse(busJobPoiCheckinTime).add(Duration(hours: 7));
     unFormatCheckIntime = busJobPoiCheckinTime;
     routePoiId = getBusPoiResObj['resultData']['route_poi_info_id'];
     busJobInfoId = getBusPoiResObj['resultData']['bus_job_info_id'];
@@ -278,7 +278,7 @@ class _ScanAndListState extends State<ScanAndList> {
 
     setState(() {
       busPoiInfoStatus = getBusPoiResObj['resultData']['status'];
-      checkInTime = ChangeFormateDateTimeToTime(busJobPoiCheckinTime);
+      checkInTime = ChangeFormateDateTimeToTime(dt);
     });
   }
 
@@ -342,6 +342,29 @@ class _ScanAndListState extends State<ScanAndList> {
       });
       ;
     }
+  }
+
+  Future<void> _getUsedPassengerInit(routePoiId) async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+    String userId = await storage.read(key: 'userId');
+    var status = "USED";
+    var queryString =
+        '?route_poi_info_id=${routePoiId}&passenger_status_id=${status}&bus_job_info_id=${busJobInfoId}';
+    var getPassengerListUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['GET_USED_PASSENGER_LIST']}${queryString}');
+
+    var res = await getHttpWithToken(getPassengerListUrl, token);
+
+    setState(() {
+      usedPassengerList = (jsonDecode(res)['resultData'] as List)
+          .map((i) => ResultDataPassengerList.fromJson(i))
+          .toList();
+      passengerCounts = usedPassengerList.length;
+    });
+
+    print("data ID and Type " + passengerCounts.toString());
+    print("data ID and Type " + busJobInfoId);
   }
 
   Future<AudioPlayer> playLocalAsset() async {
@@ -420,7 +443,7 @@ class _ScanAndListState extends State<ScanAndList> {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return LoadingDialogBox();
+          return WillPopScope(onWillPop: () {}, child: LoadingDialogBox());
         },
       );
 
@@ -472,6 +495,25 @@ class _ScanAndListState extends State<ScanAndList> {
             controller?.resumeCamera();
           });
         } else if (getBusPoiResObj['resultCode'] == "40401") {
+          Navigator.pop(context); //pop dialog
+
+          await playLocalAssetFail();
+          showGeneralDialog(
+            barrierLabel: "Barrier",
+            barrierDismissible: true,
+            barrierColor: Colors.black.withOpacity(0.5),
+            transitionDuration: Duration(milliseconds: 250),
+            context: context,
+            pageBuilder: (_, __, ___) {
+              return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
+            },
+          ).then((val) {
+            if (val) {
+              controller?.resumeCamera();
+            }
+            controller?.resumeCamera();
+          });
+        } else if (getBusPoiResObj['resultCode'] == "40902") {
           Navigator.pop(context); //pop dialog
 
           await playLocalAssetFail();
@@ -562,9 +604,9 @@ class _ScanAndListState extends State<ScanAndList> {
             empImage = "";
           }
 
-          if (empImage != null) {
-            var checkImage = await http
-                .get(Uri.parse(dotenv.env['BASE_URL_PROFILE'] + empImage));
+          if (empImage != null && empImage != "") {
+            var checkImage = await http.get(
+                Uri.parse(/* dotenv.env['BASE_URL_PROFILE'] + */ empImage));
 
             if (checkImage.statusCode != 200) {
               empImage = "";
@@ -681,7 +723,7 @@ class _ScanAndListState extends State<ScanAndList> {
                   passengerMaxCount = passengerMaxCount + 1;
                 });
                 Navigator.pop(context);
-                await _getUsedPassenger(routePoiId);
+                await _getUsedPassengerInit(routePoiId);
 
                 //pop dialog
                 controller?.resumeCamera();
@@ -942,10 +984,10 @@ class _ScanAndListState extends State<ScanAndList> {
 
   Container _employeeInfoDialogBox(empName, empId, empDepartment, empImage) {
     bool haveImage = false;
-    String baseImageUrl = dotenv.env['BASE_URL_PROFILE'];
+/*     String baseImageUrl = dotenv.env['BASE_URL_PROFILE']; */
     if (empImage != "") {
       haveImage = true;
-      empImage = baseImageUrl + empImage;
+      empImage = /* baseImageUrl + */ empImage;
     }
     print("SOCKEHH" + empImage);
     return Container(
@@ -1022,7 +1064,7 @@ class _ScanAndListState extends State<ScanAndList> {
               height: 2,
             ),
             Text(
-              'แผนก: ${empDepartment}',
+              '${empDepartment}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: callDialogBlackTextStyle,
@@ -1139,7 +1181,7 @@ class _ScanAndListState extends State<ScanAndList> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return LoadingDialogBox();
+        return WillPopScope(onWillPop: () {}, child: LoadingDialogBox());
       },
     );
 

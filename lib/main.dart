@@ -34,6 +34,7 @@ import 'package:pgc/utilities/constants.dart';
 import 'package:http/http.dart' as http;
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print("NOT SUPPPP");
   // If you're going to use other Firebase services in the background, such as Firestore,
   // make sure you call `initializeApp` before using other Firebase services.
   await Firebase.initializeApp();
@@ -61,7 +62,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   await localNotification.show(0, message.data['title'], message.data['body'],
       generalNotificationDetails);
-  await flutterLocalNotificationsPlugin.cancel(0);
+  /* await flutterLocalNotificationsPlugin.cancel(0); */
   bool res = await FlutterAppBadger.isAppBadgeSupported();
   if (res) {
     FlutterAppBadger.updateBadgeCount(1);
@@ -114,7 +115,9 @@ Future main() async {
       sound: true,
     );
   }
-  await dotenv.load(fileName: ".env");
+  /*  DotEnv envdebug = DotEnv(); */
+  await dotenv.load(fileName: ".envdebug");
+/*   await dotenv.load(fileName: ".env"); */
 
   runApp(MyApp());
 }

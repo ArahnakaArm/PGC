@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pgc/responseModel/buslistinfo.dart';
 import 'package:pgc/responseModel/deviceToken.dart';
@@ -16,6 +17,7 @@ import 'package:pgc/screens/setting_screen.dart';
 import 'package:pgc/screens/unity/message.dart';
 import 'package:pgc/screens/worklist.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
+import 'package:pgc/services/http/patchHttpWithToken.dart';
 import 'package:pgc/services/http/postHttpWithToken.dart';
 import 'package:pgc/services/utils/common.dart';
 import 'package:pgc/widgets/background.dart';
@@ -28,6 +30,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:http/http.dart' as httpp;
 
 class MainMenuScreen extends StatefulWidget {
   @override
@@ -38,13 +41,16 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     with WidgetsBindingObserver {
   AndroidNotificationChannel channel;
   IO.Socket socket;
+  List<ResultDatum> busList = [];
 
   /// Initialize the [FlutterLocalNotificationsPlugin] package.
+  ///
   FlutterLocalNotificationsPlugin localNotification;
   String _tokenNoti;
   Stream<String> _tokenStream;
   DateTime current;
   User user;
+  String callAdminNumber = "";
   BusListInfo busListInfo;
   List<DeviceTokenArray> deviceTokenArr;
   var workCounts;
@@ -61,6 +67,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   var lastName;
   var profileUrl = "";
   var department;
+  final ImagePicker _picker = ImagePicker();
 
   Future<bool> popped() {
     FToast fToast = FToast();
@@ -158,10 +165,13 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     });
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      print('A new onMessageOpenedAppQQQQ event was published!s2');
       if (mounted) {
         await _getNotification();
         await _getWorkCounts();
+        print('A new onMessageOpenedAppQQQQ event was published!2');
       }
+      print('Handling a background message ${message.messageId}');
       await _showNotification(message.data);
     });
 
@@ -351,17 +361,56 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   }
 
   Future<void> _getWorkCounts() async {
+    print("?WORK COUNT WORK");
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
     String userId = await storage.read(key: 'userId');
 
     var busStatus = "CONFIRMED";
-    var queryString = '?bus_reserve_status_id=${busStatus}';
+    var notCarSys = "CAR_SYS";
+    var queryString =
+        '?bus_reserve_status_id=${busStatus}&exclude_allocated_by=${notCarSys}';
     var getBusInfoListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryString}&driver_id=${userId}');
     var res = await getHttpWithToken(getBusInfoListUrl, token);
 
-    var workCountConverted = jsonDecode(res)['rowCount'] as int;
+    busList = (jsonDecode(res)['resultData'] as List)
+        .map((i) => ResultDatum.fromJson(i))
+        .toList();
+
+    var now = new DateTime.now();
+
+    var nowHour = now.hour;
+    var nowMinute = now.minute;
+    var nowSecond = now.second;
+    var nowMiliSecond = now.microsecond;
+
+    busList.removeWhere((item) => (item
+            .tripDatetime
+            /*
+                .add(Duration(hours: nowHour))
+                .add(Duration(minutes: nowMinute))
+                .add(Duration(seconds: nowSecond)) */
+            .millisecondsSinceEpoch <
+        now
+            .subtract(Duration(hours: nowHour))
+            .subtract(Duration(minutes: nowMinute))
+            .subtract(Duration(seconds: nowSecond))
+            .subtract(Duration(seconds: 1))
+            .toUtc()
+            .millisecondsSinceEpoch));
+
+    busList.removeWhere((item) => (item.tripDatetime.millisecondsSinceEpoch >
+        now
+            .add(Duration(hours: 24 * 3))
+            .add(Duration(hours: 24 - nowHour))
+            .subtract(Duration(minutes: nowMinute))
+            .subtract(Duration(seconds: nowSecond))
+            .subtract(Duration(seconds: 1))
+            .toUtc()
+            .millisecondsSinceEpoch));
+
+    var workCountConverted = busList.length;
 
     setState(() {
       workCounts = workCountConverted.toString();
@@ -415,12 +464,34 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       await _getProfileStorage();
       await _getNotification();
 
+      callAdminNumber = await _getAdminNumber();
+
       FirebaseMessaging.instance.getToken().then(setToken);
       _tokenStream = FirebaseMessaging.instance.onTokenRefresh;
       _tokenStream.listen(setToken);
 
       await _getWorkCounts();
     }
+  }
+
+  Future<String> _getAdminNumber() async {
+    try {
+      final storage = new FlutterSecureStorage();
+      String token = await storage.read(key: 'token');
+      String userId = await storage.read(key: 'userId');
+
+      var getAdminNumberUrl = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['GET_APP_ADMIN_NUMBER']}');
+
+      var adminNumberRes = await getHttpWithToken(getAdminNumberUrl, token);
+
+      print(adminNumberRes);
+
+      var adminNumberFomated = jsonDecode(adminNumberRes);
+      adminNumberFomated = adminNumberFomated['resultData']['value'];
+
+      return adminNumberFomated;
+    } catch (e) {}
   }
 
   Future<void> _sendNotiToken(notiToken) async {
@@ -474,17 +545,22 @@ class _MainMenuScreenState extends State<MainMenuScreen>
           Expanded(
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 23.0,
-                  backgroundImage: isConnect
-                      ? haveImage
-                          ? NetworkImage(profileUrl ?? "")
-                          : AssetImage(
-                              'assets/images/user.png',
-                            )
-                      : AssetImage(
-                          'assets/images/user.png',
-                        ),
+                GestureDetector(
+                  onTap: () {
+                    _openBottomSheet();
+                  },
+                  child: CircleAvatar(
+                    radius: 23.0,
+                    backgroundImage: isConnect
+                        ? haveImage
+                            ? NetworkImage(profileUrl ?? "")
+                            : AssetImage(
+                                'assets/images/user.png',
+                              )
+                        : AssetImage(
+                            'assets/images/user.png',
+                          ),
+                  ),
                 ),
                 SizedBox(width: 15),
                 Expanded(
@@ -521,7 +597,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                     style: profileNameStyle,
                   ) */
                       Text(
-                        "แผนก: ${department ?? ""}",
+                        "${department ?? ""}",
                         style: profileNameStyle,
                         overflow: TextOverflow.ellipsis,
                       )
@@ -610,7 +686,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
         if (profileUrlTh != null || profileUrlTh != '') {
           haveImage = true;
-          profileUrl = dotenv.env['BASE_URL_PROFILE'] + profileUrlTh;
+          profileUrl = /* dotenv.env['BASE_URL_PROFILE'] + */ profileUrlTh;
         } else {
           haveImage = false;
           profileUrl = "";
@@ -625,28 +701,136 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       MaterialPageRoute(builder: (context) => SettingScreen()),
     );
   }
-}
 
-void _openCallDialog(context) {}
+  void _openBottomSheet() {
+    showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return _bottomSheet();
+        });
+  }
 
-void _showDialog(context) {
-  showGeneralDialog(
-    barrierLabel: "Barrier",
-    barrierDismissible: true,
-    barrierColor: Colors.black.withOpacity(0.5),
-    transitionDuration: Duration(milliseconds: 250),
-    context: context,
-    pageBuilder: (_, __, ___) {
-      return CallDialogBox('097-347-1602');
-    },
-    /*  transitionBuilder: (_, anim, __, child) {
+  Column _bottomSheet() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        ListTile(
+          leading: new Icon(Icons.photo),
+          title: new Text('เลือกรูปภาพ'),
+          onTap: () {
+            Navigator.pop(context);
+            _pickImage(ImageSource.gallery);
+          },
+        ),
+        ListTile(
+          leading: new Icon(Icons.camera_alt),
+          title: new Text('ถ่ายรูป'),
+          onTap: () {
+            Navigator.pop(context);
+            _pickImage(ImageSource.camera);
+          },
+        ),
+        ListTile(
+          leading: new Icon(Icons.cancel),
+          title: new Text('ยกเลิก'),
+          onTap: () {
+            Navigator.pop(context);
+          },
+        ),
+      ],
+    );
+  }
+/* 
+  void _pickImageGallery() async {
+    try {
+      final XFile photo = await _picker.pickImage(source: ImageSource.gallery);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('กรุณาอนุญาติให้เข้าถึงรูปภาพ')),
+      );
+    }
+  } */
+
+  void _showDialog(context) {
+    showGeneralDialog(
+      barrierLabel: "Barrier",
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.5),
+      transitionDuration: Duration(milliseconds: 250),
+      context: context,
+      pageBuilder: (_, __, ___) {
+        return CallDialogBox(callAdminNumber);
+      },
+      /*  transitionBuilder: (_, anim, __, child) {
       return SlideTransition(
         position: Tween(begin: Offset(0, 1), end: Offset(0, 0)).animate(anim),
         child: child,
       );
     }, */
-  );
+    );
+  }
+
+  void _pickImage(src) async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+
+    try {
+      final XFile photo =
+          await _picker.pickImage(source: src, maxWidth: 700, maxHeight: 1200);
+      if (photo == null) {
+        return;
+      }
+      Map<String, String> headers = {HttpHeaders.authorizationHeader: token};
+      Uri uri = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['POST_IMAGE_USER']}');
+      httpp.MultipartRequest request = httpp.MultipartRequest('POST', uri);
+
+      request.files.add(await httpp.MultipartFile.fromPath(
+        'file',
+        photo.path,
+      ));
+
+      request.headers.addAll(headers);
+
+      httpp.StreamedResponse response = await request.send();
+      var responseImageUpload = await httpp.Response.fromStream(response);
+
+      Map<String, dynamic> uploadImageObjRes =
+          jsonDecode(responseImageUpload.body);
+
+      var imagePath = uploadImageObjRes['resultData']['location'];
+
+      //////////////////////// UPDATE USER //////////////////////////
+
+      var meUrl = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
+
+      var res = await patchHttpWithToken(
+          meUrl, token, {"image_profile_file": imagePath.toString()});
+
+      ///////////////////////////////////////////////////////////////
+      setState(() {
+        profileUrl = /* dotenv.env['BASE_URL_PROFILE'] +  */ imagePath;
+      });
+
+      await storage.write(key: 'profileUrl', value: imagePath);
+    } catch (e) {
+      print("RESPONSE WITH HTTP " + e.toString());
+      if (e.toString() ==
+          "PlatformException(camera_access_denied, The user did not allow camera access., null, null)") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('กรุณาอนุญาติการใช้กล้อง')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')),
+        );
+      }
+    }
+  }
 }
+
+void _openCallDialog(context) {}
 
 Future<void> _makePhoneCall(String url) async {
   if (await canLaunch(url)) {

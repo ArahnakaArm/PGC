@@ -59,7 +59,7 @@ class TabButton extends StatelessWidget {
                     padding:
                         EdgeInsets.symmetric(vertical: 1.0, horizontal: 3.0),
                     decoration: BoxDecoration(
-                        color: Color.fromRGBO(161, 161, 161, 1),
+                        color: Color.fromRGBO(92, 184, 92, 1),
                         borderRadius: BorderRadius.circular(3)),
                     child: Text(
                       numText,

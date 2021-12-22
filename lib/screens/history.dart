@@ -106,7 +106,6 @@ class _HistoryState extends State<History> {
                                                     }
                                                   },
                                                   child: Container(
-                                                      height: 105,
                                                       decoration: BoxDecoration(
                                                         color: Colors.white,
                                                         borderRadius:
@@ -189,7 +188,7 @@ class _HistoryState extends State<History> {
                                                           Container(
                                                             padding:
                                                                 EdgeInsets.only(
-                                                                    left: 41.0,
+                                                                    left: 25.0,
                                                                     right: 5.0,
                                                                     top: 3),
                                                             alignment: Alignment
@@ -200,50 +199,218 @@ class _HistoryState extends State<History> {
                                                                       .start,
                                                               children: <
                                                                   Widget>[
-                                                                Text(
-                                                                    busListItem.routeInfo
-                                                                                .tripType ==
-                                                                            'inbound'
-                                                                        ? '◉ รับเข้า ${busListItem.routeInfo.originRouteNameTh}'
-                                                                        : '◉ รับออก ${busListItem.routeInfo.originRouteNameTh}',
-                                                                    style: TextStyle(
+                                                                Row(
+                                                                  children: <
+                                                                      Widget>[
+                                                                    Text("◉",
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontFamily:
+                                                                              'Athiti',
+                                                                          color: busListItem.routeInfo.tripType == "inbound"
+                                                                              ? Color.fromRGBO(92, 184, 92, 1)
+                                                                              : Color.fromRGBO(255, 0, 0, 1),
+                                                                          fontSize:
+                                                                              12,
+                                                                        )),
+                                                                    SizedBox(
+                                                                      width: 3,
+                                                                    ),
+                                                                    busListItem.routeInfo.tripType ==
+                                                                            "inbound"
+                                                                        ? Image
+                                                                            .asset(
+                                                                            'assets/images/in.png',
+                                                                            width:
+                                                                                17,
+                                                                            height:
+                                                                                15,
+                                                                          )
+                                                                        : Image
+                                                                            .asset(
+                                                                            'assets/images/out.png',
+                                                                            width:
+                                                                                17,
+                                                                            height:
+                                                                                15,
+                                                                          ),
+                                                                    SizedBox(
+                                                                      width: 3,
+                                                                    ),
+                                                                    Expanded(
+                                                                        child: Text(
+                                                                            busListItem.routeInfo.tripType == "inbound"
+                                                                                ? ' ${busListItem.routeInfo.originRouteNameTh} - ${busListItem.routeInfo.destinationRouteNameTh}'
+                                                                                : ' ${busListItem.routeInfo.originRouteNameTh} - ${busListItem.routeInfo.destinationRouteNameTh}',
+                                                                            maxLines:
+                                                                                1,
+                                                                            overflow:
+                                                                                TextOverflow.ellipsis,
+                                                                            style: TextStyle(
+                                                                              fontFamily: 'Athiti',
+                                                                              color: busListItem.routeInfo.tripType == "inbound" ? Color.fromRGBO(92, 184, 92, 1) : Color.fromRGBO(255, 0, 0, 1),
+                                                                              fontSize: 12,
+                                                                            )))
+                                                                  ],
+                                                                ),
+                                                                Row(
+                                                                  children: <
+                                                                      Widget>[
+                                                                    Text('◉',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontFamily:
+                                                                              'Athiti',
+                                                                          fontSize:
+                                                                              12,
+                                                                        )),
+                                                                    SizedBox(
+                                                                      width: 3,
+                                                                    ),
+                                                                    Container(
+                                                                      margin: EdgeInsets
+                                                                          .only(
+                                                                              top: 2),
+                                                                      child: Image
+                                                                          .asset(
+                                                                        'assets/images/car-plate.png',
+                                                                        width:
+                                                                            18,
+                                                                        height:
+                                                                            18,
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      width: 3,
+                                                                    ),
+                                                                    Text(
+                                                                        ' ${busListItem.carInfo.carPlate}',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontFamily:
+                                                                              'Athiti',
+                                                                          fontSize:
+                                                                              12,
+                                                                        ))
+                                                                  ],
+                                                                ),
+                                                                Row(
+                                                                  children: <
+                                                                      Widget>[
+                                                                    Text(
+                                                                      '◉',
+                                                                      maxLines:
+                                                                          1,
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                      style:
+                                                                          TextStyle(
+                                                                        fontSize:
+                                                                            12,
                                                                         fontFamily:
                                                                             'Athiti',
-                                                                        color: busListItem.routeInfo.tripType ==
-                                                                                'inbound'
-                                                                            ? Color.fromRGBO(
-                                                                                92,
-                                                                                184,
-                                                                                92,
-                                                                                1)
-                                                                            : Color.fromRGBO(
-                                                                                255,
-                                                                                0,
-                                                                                0,
-                                                                                1),
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      width: 3,
+                                                                    ),
+                                                                    Container(
+                                                                      margin: EdgeInsets
+                                                                          .only(
+                                                                              top: 2),
+                                                                      child: Image
+                                                                          .asset(
+                                                                        'assets/images/schedule.png',
+                                                                        width:
+                                                                            18,
+                                                                        height:
+                                                                            18,
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      width: 3,
+                                                                    ),
+                                                                    Expanded(
+                                                                        child:
+                                                                            Text(
+                                                                      ' ${busListItem.newDateFormat}',
+                                                                      maxLines:
+                                                                          1,
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                      style:
+                                                                          TextStyle(
                                                                         fontSize:
-                                                                            12)),
-                                                                Text(
-                                                                    '◉ ทะเบียนรถ: ${busListItem.carInfo.carPlate}',
-                                                                    style:
-                                                                        TextStyle(
-                                                                      fontFamily:
-                                                                          'Athiti',
-                                                                      fontSize:
-                                                                          12,
-                                                                    )),
-                                                                Text(
-                                                                  '◉ วันที่ปฏิบัติงาน: ${busListItem.newDateFormat}',
-                                                                  style:
-                                                                      TextStyle(
-                                                                    fontSize:
-                                                                        12,
-                                                                    fontFamily:
-                                                                        'Athiti',
-                                                                  ),
+                                                                            12,
+                                                                        fontFamily:
+                                                                            'Athiti',
+                                                                      ),
+                                                                    ))
+                                                                  ],
+                                                                ),
+                                                                Row(
+                                                                  children: <
+                                                                      Widget>[
+                                                                    Text(
+                                                                      '◉',
+                                                                      maxLines:
+                                                                          1,
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                      style:
+                                                                          TextStyle(
+                                                                        fontSize:
+                                                                            12,
+                                                                        fontFamily:
+                                                                            'Athiti',
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      width: 3,
+                                                                    ),
+                                                                    Container(
+                                                                      margin: EdgeInsets
+                                                                          .only(
+                                                                              top: 2),
+                                                                      child: Image
+                                                                          .asset(
+                                                                        'assets/images/man.png',
+                                                                        width:
+                                                                            18,
+                                                                        height:
+                                                                            18,
+                                                                      ),
+                                                                    ),
+                                                                    SizedBox(
+                                                                      width: 3,
+                                                                    ),
+                                                                    Expanded(
+                                                                        child:
+                                                                            Text(
+                                                                      ' ${busListItem.numberOfReserved} คน',
+                                                                      maxLines:
+                                                                          1,
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                      style:
+                                                                          TextStyle(
+                                                                        fontSize:
+                                                                            12,
+                                                                        fontFamily:
+                                                                            'Athiti',
+                                                                      ),
+                                                                    ))
+                                                                  ],
                                                                 )
                                                               ],
                                                             ),
+                                                          ),
+                                                          SizedBox(
+                                                            height: 10,
                                                           )
                                                         ],
                                                       )),
@@ -286,21 +453,21 @@ class _HistoryState extends State<History> {
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryStringCancel}');
     var resCancel = await getHttpWithToken(getBusInfoListCancelUrl, token);
 
-    setState(() {
-      busList = (jsonDecode(res)['resultData'] as List)
-          .map((i) => ResultDatum.fromJson(i))
-          .toList();
+    busList = (jsonDecode(res)['resultData'] as List)
+        .map((i) => ResultDatum.fromJson(i))
+        .toList();
 
-      busListCancel = (jsonDecode(resCancel)['resultData'] as List)
-          .map((i) => ResultDatum.fromJson(i))
-          .toList();
-      busList = [...busList, ...busListCancel];
+    busListCancel = (jsonDecode(resCancel)['resultData'] as List)
+        .map((i) => ResultDatum.fromJson(i))
+        .toList();
+    busList = [...busList, ...busListCancel];
+    setState(() {
       busList = ChangeDateFormatBusInfoList(busList);
 
       Comparator<ResultDatum> sortByCreatedAt =
-          (a, b) => a.createdAt.compareTo(b.createdAt);
+          (b, a) => a.completedAt.compareTo(b.completedAt);
       busList.sort(sortByCreatedAt);
-      busList = busList.reversed.toList();
+      /*   busList = busList.reversed.toList(); */
       /* busList = []; */
       isLoading = false;
       if (busList.length == 0) {
@@ -338,19 +505,19 @@ class _HistoryState extends State<History> {
       });
     } //
     else {
-      await _getNotiCounts();
+      /*    await _getNotiCounts(); */
       await _getBusInfoList();
     }
   }
 
-  Future<void> _getNotiCounts() async {
+  /*  Future<void> _getNotiCounts() async {
     final storage = new FlutterSecureStorage();
     String notiCountsStorage = await storage.read(key: 'notiCounts');
     print("NOTIC FROM " + notiCountsStorage);
     setState(() {
       notiCounts = notiCountsStorage;
     });
-  }
+  } */
 }
 
 Container _headerWidget(imagePath, headerText) {

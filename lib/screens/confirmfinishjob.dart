@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:connectivity/connectivity.dart';
+import 'package:exif/exif.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pgc/model/passDataFinishJob.dart';
 import 'package:pgc/responseModel/busJobInfo.dart';
 import 'package:pgc/responseModel/busRef.dart';
@@ -26,6 +28,7 @@ import 'package:pgc/widgets/commonsmallfinishjobbackground.dart';
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:image/image.dart' as img;
 
 class ConfirmFinishJob extends StatefulWidget {
   const ConfirmFinishJob({Key key}) : super(key: key);
@@ -47,7 +50,9 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
   String busJobInfoId = "";
   String finishDocNo = "";
   int mileStart;
+  File imageFile;
   var notiCounts = "0";
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -139,7 +144,7 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
 
   void _setCurrentTime() {
     DateTime now = new DateTime.now();
-    var dateTimeFormated = ChangeFormatDateToTHLocal(now.toString());
+    var dateTimeFormated = ChangeFormatDateToTHLocal(now).toString();
     setState(() {
       currentDateTime = dateTimeFormated;
     });
@@ -212,10 +217,10 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
                               SizedBox(height: 20),
                               Text('ถ่ายภาพ', style: finishJobTextStyle),
                               SizedBox(height: 10),
-                              if (_imagePath != '')
+                              if (_imagePath != "")
                                 Container(
-                                  width: 120,
-                                  height: 160,
+                                  width: 250,
+                                  height: 200,
                                   decoration:
                                       BoxDecoration(color: Colors.white),
                                   child: Image.file(File(_imagePath)),
@@ -233,33 +238,37 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
                                     if (await Permission.camera
                                         .request()
                                         .isGranted) {
-                                      final String imagePath =
-                                          await Navigator.of(context)
-                                              .push(MaterialPageRoute(
-                                                  builder: (_) => TakePhoto(
-                                                        camera:
-                                                            _cameraDescription,
-                                                      )));
-                                      print('imagepath: $imagePath');
-                                      if (imagePath != null) {
+                                      final XFile image =
+                                          await _picker.pickImage(
+                                              source: ImageSource.camera,
+                                              maxWidth: 700,
+                                              maxHeight: 1200);
+                                      if (image != null) {
+                                        var imagePath = image.path;
+                                        print('imagepath: $imagePath');
+                                        File rotateImage =
+                                            await fixExifRotation(imagePath);
                                         setState(() {
                                           _imagePath = imagePath;
+                                          imageFile = rotateImage;
                                         });
                                       }
                                       /*  await _callHttpImage(_imagePath); */
                                     }
                                   } else if (status.isGranted) {
-                                    final String imagePath =
-                                        await Navigator.of(context)
-                                            .push(MaterialPageRoute(
-                                                builder: (_) => TakePhoto(
-                                                      camera:
-                                                          _cameraDescription,
-                                                    )));
-                                    print('imagepath: $imagePath');
-                                    if (imagePath != null) {
+                                    final XFile image = await _picker.pickImage(
+                                        source: ImageSource.camera,
+                                        maxWidth: 700,
+                                        maxHeight: 1200);
+
+                                    if (image != null) {
+                                      var imagePath = image.path;
+                                      print('imagepath: $imagePath');
+                                      File rotateImage =
+                                          await fixExifRotation(imagePath);
                                       setState(() {
                                         _imagePath = imagePath;
+                                        imageFile = rotateImage;
                                       });
                                     }
                                     /*    await _callHttpImage(_imagePath); */
@@ -370,6 +379,99 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
     );
   }
 
+  Future<File> fixExifRotation(String imagePath) async {
+    final originalFile = File(imagePath);
+    List<int> imageBytes = await originalFile.readAsBytes();
+
+    final originalImage = img.decodeImage(imageBytes);
+
+    final height = originalImage.height;
+    final width = originalImage.width;
+
+    // Let's check for the image size
+    if (height >= width) {
+      print("CAMARA DEBUG " +
+          "YES " +
+          height.toString() +
+          " " +
+          width.toString());
+      // I'm interested in portrait photos so
+      // I'll just return here
+      return originalFile;
+    }
+
+    // We'll use the exif package to read exif data
+    // This is map of several exif properties
+    // Let's check 'Image Orientation'
+    final exifData = await readExifFromBytes(imageBytes);
+
+    img.Image fixedImage;
+
+    if (height < width) {
+      // rotate
+      /*   if (exifData['Image Orientation'].printable.contains('Horizontal')) {
+        fixedImage = img.copyRotate(originalImage, 180);
+        print("CAMARA DEBUG " +
+            "CASE  1 " +
+            height.toString() +
+            " " +
+            width.toString());
+      } else if (exifData['Image Orientation'].printable.contains('180')) {
+        fixedImage = img.copyRotate(originalImage, -90);
+        print("CAMARA DEBUG " +
+            "CASE  2 " +
+            height.toString() +
+            " " +
+            width.toString());
+      } else {
+        fixedImage = img.copyRotate(originalImage, 0);
+        print("CAMARA DEBUG " +
+            "CASE  3 " +
+            height.toString() +
+            " " +
+            width.toString());
+      } */
+
+      if (exifData['Image Orientation'].printable.contains('Horizontal')) {
+        fixedImage = img.copyRotate(originalImage, 0);
+        print("CAMARA DEBUG " +
+            "CASE  1 " +
+            height.toString() +
+            " " +
+            width.toString());
+      } else if (exifData['Image Orientation'].printable.contains('180')) {
+        fixedImage = img.copyRotate(originalImage, -90);
+      } else if (exifData['Image Orientation'].printable.contains('CCW')) {
+        fixedImage = img.copyRotate(originalImage, 180);
+        print("CAMARA DEBUG " +
+            "CASE  2 " +
+            height.toString() +
+            " " +
+            width.toString());
+      } else {
+        fixedImage = img.copyRotate(originalImage, 0);
+        print("CAMARA DEBUG " +
+            "CASE  3 " +
+            height.toString() +
+            " " +
+            width.toString());
+      }
+    }
+
+    print("CAMARA DEBUG " + "NO " + height.toString() + " " + width.toString());
+
+    // Here you can select whether you'd like to save it as png
+    // or jpg with some compression
+    // I choose jpg with 100% quality
+    final fixedFile =
+        await originalFile.writeAsBytes(img.encodeJpg(fixedImage));
+
+    /*   setState(() {
+      imageFile = fixedFile;
+    }); */
+    return fixedFile;
+  }
+
   Future<void> _callHttpImage(String path, endMiles) async {
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
@@ -403,11 +505,24 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
       Map<String, dynamic> uploadImageObjRes =
           jsonDecode(responseImageUpload.body);
 
-      var imagePath = uploadImageObjRes['resultData']['path'];
+      var imagePath = uploadImageObjRes['resultData']['location'];
 
       /////////////////// GET BUSREF //////////////////
 
       //////////// GET REF INFO ///////////////////
+
+      var getUserByMeUrl = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
+
+      var userByMeRes = await getHttpWithToken(getUserByMeUrl, token);
+
+      Map<String, dynamic> getUserByMeResObj = jsonDecode(userByMeRes);
+
+      /////////////// END GET_USER_BY_ME //////////////
+      print("Prod Debug" + getUserByMeResObj.toString());
+      /////////////// GET_USER_PERMISSION //////////////
+      var userId = getUserByMeResObj['resultData']['user_id'];
+
       var queryString = '?bus_job_info_id=${busJobInfoId}';
 
       var busRefUrl = Uri.parse(
@@ -438,7 +553,8 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
         "number_of_reserved":
             busRef.resultData[0].busJobInfoInfo.numberOfReserved,
         "bus_reserve_status_id": "COMPLETED",
-        "completed_at": isoDate
+        "completed_at": isoDate,
+        "completed_by": userId
       };
 
       finishDocNo = busRef.resultData[0].busJobInfoInfo.docNo;

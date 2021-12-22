@@ -76,7 +76,8 @@ class CommonSmallProcessBackground extends StatelessWidget {
       width: 37.5,
       height: 37.5,
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+      decoration: BoxDecoration(
+          color: Color.fromRGBO(240, 173, 78, 1), shape: BoxShape.circle),
       child: Container(
         child: Image.asset(
           'assets/images/hourglass.png',
@@ -104,7 +105,8 @@ class CommonSmallProcessBackground extends StatelessWidget {
       width: 37.5,
       height: 37.5,
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+      decoration: BoxDecoration(
+          color: Color.fromRGBO(240, 173, 78, 1), shape: BoxShape.circle),
       child: Container(
         child: Image.asset(
           'assets/images/hourglass.png',
@@ -118,7 +120,7 @@ class CommonSmallProcessBackground extends StatelessWidget {
       width: 37.5,
       height: 37.5,
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle),
     );
   }
 }

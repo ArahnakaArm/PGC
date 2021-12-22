@@ -54,17 +54,22 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
           Expanded(
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 23.0,
-                  backgroundImage: isConnect
-                      ? haveImage
-                          ? NetworkImage(profileUrl ?? "")
-                          : AssetImage(
-                              'assets/images/user.png',
-                            )
-                      : AssetImage(
-                          'assets/images/user.png',
-                        ),
+                GestureDetector(
+                  onTap: () {
+                    _uploadImage();
+                  },
+                  child: CircleAvatar(
+                    radius: 23.0,
+                    backgroundImage: isConnect
+                        ? haveImage
+                            ? NetworkImage(profileUrl ?? "")
+                            : AssetImage(
+                                'assets/images/user.png',
+                              )
+                        : AssetImage(
+                            'assets/images/user.png',
+                          ),
+                  ),
                 ),
                 SizedBox(width: 15),
                 Expanded(
@@ -101,7 +106,7 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
                     style: profileNameStyle,
                   ) */
                       Text(
-                        "แผนก: ${department ?? ""}",
+                        "${department ?? ""}",
                         style: profileNameStyle,
                         overflow: TextOverflow.ellipsis,
                       )
@@ -167,6 +172,10 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
     }
   }
 
+  void _uploadImage() {
+    print("UploadImage" + "object");
+  }
+
   Future<void> _getProfile() async {
     final storage = new FlutterSecureStorage();
 
@@ -230,7 +239,7 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
 
         if (profileUrlTh != null || profileUrlTh != '') {
           haveImage = true;
-          profileUrl = dotenv.env['BASE_URL_PROFILE'] + profileUrlTh;
+          profileUrl = /* dotenv.env['BASE_URL_PROFILE'] + */ profileUrlTh;
         } else {
           haveImage = false;
           profileUrl = "";

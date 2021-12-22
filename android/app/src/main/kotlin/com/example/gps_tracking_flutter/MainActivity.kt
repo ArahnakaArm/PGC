@@ -1,4 +1,4 @@
-package com.example.PGC
+package com.makewell.pcg
 
 import io.flutter.embedding.android.FlutterActivity
 

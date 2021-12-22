@@ -1,0 +1,46 @@
+#
+NO_INTERNET_CONNECTION=ไม่มีสัญญาณอินเตอร์เน็ต
+ERROR_TEXT=เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง
+NO_PERMISSION_GPS=ไม่พบสัญญาณ GPS
+NO_PERMISSION_SCAN=กรุณาอนุญาติการใช้กล้อง
+DISTANCE_LIMIT_METER=1000000
+BASE_URL_PROFILE=http://159.89.196.54:9981/
+BASE_API=http://159.89.196.54:9981/pcg/v1/
+#BASE_URL_PROFILE=https://api.pcgcarbooking.com/
+#BASE_API=https://api.pcgcarbooking.com/pcg/v1/
+AUTH_USER_PATH=auth-user
+GET_USER_BY_ME_PATH=users/me
+GET_BUS_JOB_INFO_LIST=bus-job-info
+GET_BUS_JOB_INFO=bus-job-info
+GET_USER_PERMISSION_PATH=user-permission
+POST_CHANGE_PASSWORD_PATH=users/userid/change-password
+PUT_BUS_JOB_INFO=bus-job-info
+PUT_BUS_RESERVE_INFO=bus-reserve-info
+GET_REF_BUS_JOB_RESERVE=bus-job-ref-reserve
+GET_ROUTE_INFO=route-info
+POST_BUS_JOB_POI=bus-job-poi
+GET_ROUTE_POI_INFO=route-poi-info
+GET_BUS_JOB_POI=bus-job-poi
+PUT_BUS_JOB_POI=bus-job-poi
+PUT_USED_PASSENGER=bus-job-info/bus_job_info_id/passenger/passenger_id/used
+PUT_USED_USER=bus-job-info/bus_job_info_id/user/user_id/used
+GET_USED_PASSENGER_LIST=bus-reserve-passenger
+POST_IMAGE=upload-file/destinationImage
+POST_IMAGE_USER=upload-file/user
+GET_PASSENGER_COUNT=bus-reserve-passenger
+GET_APP_ADMIN_NUMBER=app-config/MOBILE_DRIVER:ADMIN_PHONENUMBER
+
+CREATE_DEVICE_TOKEN=device-token
+DELETE_DEVICE_TOKEN=device-token
+GET_ALL_DEVICE_TOKEN=device-token
+SOCKET_INTERVAL_MINUTE=5
+GET_APP_CONFIG_RADIUS=app-config/BUS_BOOKING_SYS:RADIUS_FOR_AUTO_CHECKIN_M
+GET_NOTIFICATION=notification
+PCG_SOCKET=https://pcg-socket.makewell.co.th
+#PCG_SOCKET=https://socket.pcgcarbooking.com
+VERIFY_USER=bus-job-info/bus_job_info_id/user/user_id/verify
+#CURRENT_VER=1.0.2
+CURRENT_VER=0.0.29
+#END API1
+
+# This is a comment

@@ -66,7 +66,7 @@ class EmployeeInfoDialogBox extends StatelessWidget {
               height: 2,
             ),
             Text(
-              'แผนก: TEST',
+              'TEST',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: callDialogBlackTextStyle,

@@ -53,6 +53,7 @@ class ResultDatum {
     this.numberOfReserved,
     this.busReserveStatusId,
     this.createdAt,
+    this.completedAt,
     this.updatedAt,
     this.deletedAt,
     this.driverInfo,
@@ -74,6 +75,7 @@ class ResultDatum {
   int numberOfReserved;
   String busReserveStatusId;
   DateTime createdAt;
+  DateTime completedAt;
   DateTime updatedAt;
   dynamic deletedAt;
   DriverInfo driverInfo;
@@ -96,6 +98,9 @@ class ResultDatum {
       busReserveStatusId: json["bus_reserve_status_id"],
       createdAt: DateTime.parse(json["created_at"]),
       updatedAt: DateTime.parse(json["updated_at"]),
+      completedAt: DateTime.parse(json["completed_at"] == null
+          ? "0001-01-01 00:00:00"
+          : json["completed_at"]),
       deletedAt: json["deleted_at"],
       driverInfo: DriverInfo.fromJson(json["driver_info"]),
       carInfo: CarInfo.fromJson(json["car_info"]),
@@ -117,6 +122,7 @@ class ResultDatum {
         "bus_reserve_status_id": busReserveStatusId,
         "created_at": createdAt.toIso8601String(),
         "updated_at": updatedAt.toIso8601String(),
+        "completed_at": completedAt.toIso8601String(),
         "deleted_at": deletedAt,
         "driver_info": driverInfo.toJson(),
         "car_info": carInfo.toJson(),

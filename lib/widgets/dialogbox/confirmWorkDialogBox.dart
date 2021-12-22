@@ -9,20 +9,23 @@ import 'package:pgc/screens/processwork.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/postHttpWithToken.dart';
 import 'package:pgc/services/http/putHttpWithToken.dart';
+import 'package:pgc/services/utils/common.dart';
 import 'package:pgc/utilities/constants.dart';
 
 class ConfirmWorkDialogBox extends StatelessWidget {
   String busJobId;
   String carPlate;
   String beginMiles;
+  DateTime tripTime;
   FocusNode miles = FocusNode();
   BusRef busRef;
   List<ResultDatumBusRef> busCurrentList = [];
   String reserveId;
+  String busJobDoc;
   String endMiles;
   TextEditingController milesController = new TextEditingController();
-  ConfirmWorkDialogBox(
-      this.busJobId, this.carPlate, this.beginMiles, this.endMiles);
+  ConfirmWorkDialogBox(this.busJobId, this.carPlate, this.beginMiles,
+      this.endMiles, this.tripTime, this.busJobDoc);
   bool canPress = true;
 
   @override
@@ -55,18 +58,32 @@ class ConfirmWorkDialogBox extends StatelessWidget {
                           height: 30,
                         ),
                         Text(
-                          'ตรวจสอบเลขไมล์ก่อนเปิดงาน',
+                          '${this.busJobDoc}',
                           style: callDialogBlueTextStyle,
                         ),
                         SizedBox(
-                          height: 15,
+                          height: 12,
+                        ),
+                        Text(
+                          'วันที่: ${ChangeFormatDateToTHLocalNoTime(this.tripTime.add(Duration(hours: 7)))}',
+                          style: callDialogBlackTextStyle,
+                        ),
+                        SizedBox(
+                          height: 12,
+                        ),
+                        Text(
+                          'เวลา: ${ChangeFormateDateTimeToTime(this.tripTime.add(Duration(hours: 7)))} น.',
+                          style: callDialogBlackTextStyle,
+                        ),
+                        SizedBox(
+                          height: 12,
                         ),
                         Text(
                           'ทะเบียนรถ: ${this.carPlate}',
                           style: callDialogBlackTextStyle,
                         ),
                         SizedBox(
-                          height: 15,
+                          height: 12,
                         ),
                         Row(
                           children: <Widget>[
