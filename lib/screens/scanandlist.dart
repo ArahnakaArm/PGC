@@ -24,7 +24,6 @@ import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/notiScanDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/savedEmployeeInfoDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/successEmployeeInfoDialogBox.dart';
-import 'package:pgc/widgets/profilebar.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/model/passenger.dart';
 import 'package:pgc/widgets/tabbutton.dart';
@@ -292,6 +291,7 @@ class _ScanAndListState extends State<ScanAndList> {
     var getPassengerListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_USED_PASSENGER_LIST']}${queryString}');
 
+    print("PPPLOKOK :" + getPassengerListUrl.toString());
     var res = await getHttpWithToken(getPassengerListUrl, token);
 
     setState(() {
@@ -354,6 +354,11 @@ class _ScanAndListState extends State<ScanAndList> {
     var getPassengerListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_USED_PASSENGER_LIST']}${queryString}');
 
+    print("PPPLOKOK :" + routePoiId);
+    print("PPPLOKOK :" + status);
+    print("PPPLOKOK :" + busJobInfoId);
+    print("PPPLOKOK :" + getPassengerListUrl.toString());
+
     var res = await getHttpWithToken(getPassengerListUrl, token);
 
     setState(() {
@@ -406,6 +411,7 @@ class _ScanAndListState extends State<ScanAndList> {
     setState(() {
       this.controller = controller;
     });
+    controller.resumeCamera();
     controller.scannedDataStream.listen((scanData) {
       setState(() async {
         result = scanData;
@@ -432,7 +438,6 @@ class _ScanAndListState extends State<ScanAndList> {
       }
     } catch (e) {
       controller?.resumeCamera();
-      print("data ID and Type " + e.toString());
     }
 
     print("data ID and Type " + dataId);

@@ -428,6 +428,7 @@ class _ScanAndListOutBoundState extends State<ScanAndListOutBound> {
     setState(() {
       this.controller = controller;
     });
+    controller.resumeCamera();
     controller.scannedDataStream.listen((scanData) {
       setState(() async {
         result = scanData;

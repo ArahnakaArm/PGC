@@ -17,6 +17,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:rounded_loading_button/rounded_loading_button.dart';
 import 'package:http/http.dart' as http;
 
+
 class LogInScreen extends StatefulWidget {
   @override
   _LogInScreenState createState() => _LogInScreenState();
@@ -189,7 +190,10 @@ class _LogInScreenState extends State<LogInScreen> {
     );
   }
 
-  void _validate(username, pass, ctx) {
+  void _validate(username, pass, ctx) async {
+ 
+
+
     FocusScope.of(context).unfocus();
     bool emailValid = RegExp(
             r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")

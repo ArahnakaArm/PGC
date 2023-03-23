@@ -33,6 +33,35 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72376545929:android:d3937b2a7cf8596b80cc58",
+        "android_client_info": {
+          "package_name": "com.makewell.pcg.driver"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "72376545929-vhrk9lo9bn4r7brubdlf4fd3qih6sle2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMs2_Xpwcd5Odp9697gO0SbE4uqdI8xy8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "72376545929-vhrk9lo9bn4r7brubdlf4fd3qih6sle2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

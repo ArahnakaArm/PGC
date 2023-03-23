@@ -365,11 +365,36 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
     String userId = await storage.read(key: 'userId');
+    DateTime nowLocal = new DateTime.now();
+    DateTime now = new DateTime.now()
+        .subtract(Duration(hours: 7))
+        .add(Duration(hours: 14));
+
+    if (now.day == nowLocal.day) {
+      now = now.subtract(Duration(days: 1));
+    }
+    var dateFormatted = now.toIso8601String();
+
+    var startDateToday =
+        dateFormatted.toString().split('T')[0] + 'T14:00:00%2B00:00';
+
+    DateTime threeDay = new DateTime.now()
+        .subtract(Duration(hours: 7))
+        .add(Duration(hours: 72));
+
+    if (threeDay.hour >= 17) {
+      threeDay = threeDay.add(Duration(days: 1));
+    }
+
+    var dateFormattedThreeDay = threeDay.toIso8601String();
+
+    var endDateThreeDays =
+        dateFormattedThreeDay.toString().split('T')[0] + 'T16:59:59%2B00:00';
 
     var busStatus = "CONFIRMED";
     var notCarSys = "CAR_SYS";
     var queryString =
-        '?bus_reserve_status_id=${busStatus}&exclude_allocated_by=${notCarSys}';
+        '?bus_reserve_status_id=${busStatus}&exclude_allocated_by=${notCarSys}&start_trip_datetime=${startDateToday}&end_trip_datetime=${endDateThreeDays}';
     var getBusInfoListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryString}&driver_id=${userId}');
     var res = await getHttpWithToken(getBusInfoListUrl, token);
@@ -377,38 +402,6 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     busList = (jsonDecode(res)['resultData'] as List)
         .map((i) => ResultDatum.fromJson(i))
         .toList();
-
-    var now = new DateTime.now();
-
-    var nowHour = now.hour;
-    var nowMinute = now.minute;
-    var nowSecond = now.second;
-    var nowMiliSecond = now.microsecond;
-
-    busList.removeWhere((item) => (item
-            .tripDatetime
-            /*
-                .add(Duration(hours: nowHour))
-                .add(Duration(minutes: nowMinute))
-                .add(Duration(seconds: nowSecond)) */
-            .millisecondsSinceEpoch <
-        now
-            .subtract(Duration(hours: nowHour))
-            .subtract(Duration(minutes: nowMinute))
-            .subtract(Duration(seconds: nowSecond))
-            .subtract(Duration(seconds: 1))
-            .toUtc()
-            .millisecondsSinceEpoch));
-
-    busList.removeWhere((item) => (item.tripDatetime.millisecondsSinceEpoch >
-        now
-            .add(Duration(hours: 24 * 3))
-            .add(Duration(hours: 24 - nowHour))
-            .subtract(Duration(minutes: nowMinute))
-            .subtract(Duration(seconds: nowSecond))
-            .subtract(Duration(seconds: 1))
-            .toUtc()
-            .millisecondsSinceEpoch));
 
     var workCountConverted = busList.length;
 

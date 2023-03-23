@@ -116,8 +116,8 @@ Future main() async {
     );
   }
   /*  DotEnv envdebug = DotEnv(); */
-  await dotenv.load(fileName: ".envdebug");
-/*   await dotenv.load(fileName: ".env"); */
+  /* await dotenv.load(fileName: ".envdebug"); */
+  await dotenv.load(fileName: ".env");
 
   runApp(MyApp());
 }

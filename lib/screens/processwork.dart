@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +13,7 @@ import 'package:pgc/model/process.dart';
 import 'package:pgc/responseModel/busJobInfo.dart';
 import 'package:pgc/responseModel/busPoi.dart';
 import 'package:pgc/responseModel/busRef.dart';
-
+import 'package:pgc/services/http/postHttpWithToken.dart';
 import 'package:pgc/responseModel/routeInfo.dart';
 import 'package:pgc/screens/checkin.dart';
 import 'package:pgc/screens/confirmfinishjob.dart';
@@ -169,6 +169,10 @@ class _ProcessWorkState extends State<ProcessWork> {
   }
 
   Future<void> _getBusJobInfo() async {
+    var aTime = 0;
+    var bTime = 0;
+    var cTime = 0;
+
     if (mounted) {
       setState(() {
         isLoading = true;
@@ -177,14 +181,25 @@ class _ProcessWorkState extends State<ProcessWork> {
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
     String userId = await storage.read(key: 'userId');
+
     var getBusJobInfoUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO']}/${busJobInfoId}');
     var arrStatus = [];
-    try {
-      var res = await getHttpWithToken(getBusJobInfoUrl, token);
 
+    print("TOKEN :" + busJobInfoId);
+
+    try {
+      var nowAStart = new DateTime.now();
+      var nowAStartSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
+      var reqASec = 0.00;
+      var res = await getHttpWithToken(getBusJobInfoUrl, token);
+      var nowAEndSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
+      reqASec = reqASec + nowAEndSecond - nowAStartSecond;
       BusJobInfo busJobInfo = busJobInfoFromJson(res);
       routeId = busJobInfo.resultData.routeInfo.routeInfoId;
+      var nowAEnd = new DateTime.now();
+
+/*  */
 
       setState(() {
         tripName = busJobInfo.resultData.docNo;
@@ -219,7 +234,15 @@ class _ProcessWorkState extends State<ProcessWork> {
       var getRouteInfoUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['GET_ROUTE_INFO']}/${routeId}');
 
+      var nowBStart = new DateTime.now();
+
+      var nowBStartSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
+      var reqBSec = 0.00;
+
       var routeInfoRes = await getHttpWithToken(getRouteInfoUrl, token);
+
+      var nowBEndSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
+      reqBSec = reqBSec + nowBEndSecond - nowBStartSecond;
 
       RouteInfoByPath routeInfo = routeInfoByPathFromJson(routeInfoRes);
 
@@ -231,117 +254,72 @@ class _ProcessWorkState extends State<ProcessWork> {
       Comparator<RoutePoiInfo> sortByOrder =
           (a, b) => a.order.compareTo(b.order);
       routePoi.sort(sortByOrder);
-      /*    routePoi.sort(sortByOrder); */
+      var reqCSec = 0.00;
+      var reqDSec = 0.00;
+      var reqESec = 0.00;
       arriveNumber = 0;
       for (int i = 0; i < routePoi.length; i++) {
         var routePoiId = routePoi[i].routePoiInfoId;
-        print("-----------------1");
-
-        var queryString =
-            '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${routeId}';
-
-        var busPoiUrl = Uri.parse(
-            '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_POI']}${queryString}');
-
-        var busPoiResObj = await getHttpWithToken(busPoiUrl, token);
-
-        Map<String, dynamic> busPoiRes = jsonDecode(busPoiResObj);
-
-        print("-----------------2" + busPoiUrl.toString());
-        print("-----------------2" + routePoiId.toString());
-        print("-----------------2" + busJobInfoId.toString());
-        print("-----------------2" + routeId.toString());
-        print("-----------------2");
-
-        print(busPoiRes['resultData'][0]['status']);
-
-        routePoi[i].status = busPoiRes['resultData'][0]['status'];
-        print("++++++++++" + busPoiRes['resultData'][0]['checkin_datetime']);
-        if (busPoiRes['resultData'][0]['checkin_datetime'].toString() ==
-            "2001-01-01T00:00:00.000Z") {
-          routePoi[i].checkInTime = "";
-        } else {
-          DateTime dt =
-              DateTime.parse(busPoiRes['resultData'][0]['checkin_datetime'])
-                  .add(Duration(hours: 7));
-
-          routePoi[i].checkInTime = ChangeFormateDateTimeToTime(dt.toString());
-        }
-
         var queryStringPassengerCount =
-            '?bus_job_info_id=${busJobInfoId}&route_poi_info_id=${routePoiId}&exclude_passenger_status_id=CANCELED';
+            '?bus_job_info_id=${busJobInfoId}&route_poi_info_id=${routePoiId}&exclude_passenger_status_id=CANCELED&limit=0';
 
-        /*   print("+++++" + busJobInfoId);
-        print("+++++" + routePoiId); */
         var busPoiPassengerCountUrl = Uri.parse(
             '${dotenv.env['BASE_API']}${dotenv.env['GET_PASSENGER_COUNT']}${queryStringPassengerCount}');
+
+        var nowDStartSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
 
         var busPoiPassengerCountResObj =
             await getHttpWithToken(busPoiPassengerCountUrl, token);
 
-        /*   print(
-            "RESPONSE WITH HTTPssdad " + busPoiPassengerCountResObj.toString());
- */
+        var nowDEndSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
+        reqDSec = reqDSec + nowDEndSecond - nowDStartSecond;
 
         var busPoiPassengerCountRes =
             jsonDecode(busPoiPassengerCountResObj)['rowCount'] as int;
+
         routePoi[i].passengerCount = 0;
-        print("RESPONSE WITH HTTPsssssCount " +
-            busPoiPassengerCountRes.toString());
+
         if (busPoiPassengerCountRes != 0) {
           routePoi[i].passengerCount = busPoiPassengerCountRes;
         } else {
           routePoi[i].passengerCount = 0;
         }
+        if (routePoi[i].passengerCount != 0) {
+          var statusgUsedPassenger = "USED";
+          var queryStringUsedPassenger =
+              '?route_poi_info_id=${routePoiId}&passenger_status_id=${statusgUsedPassenger}&bus_job_info_id=${busJobInfoId}&limit=0';
+          var getPassengerListUrl = Uri.parse(
+              '${dotenv.env['BASE_API']}${dotenv.env['GET_USED_PASSENGER_LIST']}${queryStringUsedPassenger}');
 
-        /*  print("RESPONSE WITH HTTPsssss " + routePoiId.toString());
-        print("RESPONSE WITH HTTPsssss " + busPoiPassengerCountRes.toString()); */
+          var nowEStartSecond =
+              new DateTime.now().millisecondsSinceEpoch / 1000;
 
-        /*  print("RESPONSE WITH HTTPss " +
-            busPoiPassengerCountRes['resultData'][0]['route_poi_info_count']); */
-        /*  if (busPoiPassengerCountRes['resultData'].length != 0) {
-          routePoi[i].passengerCount =
-              busPoiPassengerCountRes['resultData'][0]['route_poi_info_count'];
+          var resUsedPassenger =
+              await getHttpWithToken(getPassengerListUrl, token);
+
+          var nowEEndSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
+          reqESec = reqESec + nowEEndSecond - nowEStartSecond;
+
+          routePoi[i].passengerCountUsed =
+              (jsonDecode(resUsedPassenger)['rowCount'] as int);
         } else {
-          routePoi[i].passengerCount = 0;
+          routePoi[i].passengerCountUsed = 0;
         }
- */
-        /*    print("RESPONSE WITH HTTPss " + routePoi[i].passengerCount.toString()); */
-
-        var statusgUsedPassenger = "USED";
-        var queryStringUsedPassenger =
-            '?route_poi_info_id=${routePoiId}&passenger_status_id=${statusgUsedPassenger}&bus_job_info_id=${busJobInfoId}';
-        var getPassengerListUrl = Uri.parse(
-            '${dotenv.env['BASE_API']}${dotenv.env['GET_USED_PASSENGER_LIST']}${queryStringUsedPassenger}');
-
-        var resUsedPassenger =
-            await getHttpWithToken(getPassengerListUrl, token);
-
-        routePoi[i].passengerCountUsed =
-            (jsonDecode(resUsedPassenger)['rowCount'] as int);
 
         arriveNumber = arriveNumber + routePoi[i].passengerCountUsed;
 
-        print(
-            "RESPONSE WITH HTTP " + routePoi[i].passengerCountUsed.toString());
-        print("RESPONSE WITH HTTP " + routePoiId.toString());
-        print("RESPONSE WITH HTTP " + busJobInfoId.toString());
         if (i < routePoi.length - 1 && routePoi[i].passengerCount != 0) {
           arrStatus.add(routePoi[i].status);
-          /*  if (routePoi[i].status != "FINISHED") {
-            canFinishJob = false;
-          }
-
-          print("CHECK CAN FINISH " + routePoi[i].status.toString());
-          print("CHECK CAN FINISH " + canFinishJob.toString()); */
         } else if (i == 0 && tripType == "outbound") {
           arrStatus.add(routePoi[i].status);
         }
-
-        print("DDASDADASDASD " + routePoi[i].order.toString());
       }
 
+      var nowBEnd = new DateTime.now();
+
       arrayOldLength = routePoi.length;
+
+      var nowCStart = new DateTime.now();
 
       if (tripType == "inbound") {
         routePoi.removeWhere((item) =>
@@ -351,18 +329,174 @@ class _ProcessWorkState extends State<ProcessWork> {
             item.order != (routePoi.length - 1) &&
             item.order != 0));
       }
+      var nowCEnd = new DateTime.now();
 
-      if (arrStatus.contains("IDLE") || arrStatus.contains("CHECKED-IN")) {
-        print("CHECK CAN FINISH " + "CANNOT");
-        canFinishJob = false;
-      } else {
-        print("CHECK CAN FINISH " + "CAN");
-        canFinishJob = true;
+      var queryString =
+          '?bus_job_info_id=${busJobInfoId}&route_info_id=${routeId}';
+
+      var busPoiUrl = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_POI']}${queryString}');
+      print("DFWFWFWFWW 1 " + busPoiUrl.toString());
+      var nowCStartSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
+
+      var busPoiResObj = await getHttpWithToken(busPoiUrl, token);
+
+      var nowCEndSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
+      reqCSec = reqCSec + nowCEndSecond - nowCStartSecond;
+
+/*       BusJobInfo busJob = busJobInfoFromJson(busPoiResObj); */
+
+      Map<String, dynamic> busPoiRes = jsonDecode(busPoiResObj);
+
+      var busPoiArr = busPoiRes['resultData'];
+
+      var nowDStart = new DateTime.now();
+      for (int i = 0; i < busPoiArr.length; i++) {
+        routePoi = routePoi.map((poi) {
+          if (busPoiArr[i]['route_poi_info_id'] == poi.routePoiInfoId) {
+            poi.status = busPoiArr[i]['status'];
+
+            DateTime dt = DateTime.parse(busPoiArr[i]['checkin_datetime'])
+                .add(Duration(hours: 7));
+            poi.checkInTime =
+                ChangeFormateDateTimeToTime(dt.toString()).toString();
+          } /* else {
+            poi.status = 'IDLE';
+            poi.checkInTime = ChangeFormateDateTimeToTime(
+                    '2022-06-05T14:53:50.000Z'.toString())
+                .toString();
+          } */
+
+          return poi;
+        }).toList();
       }
 
       for (int i = 0; i < routePoi.length; i++) {
         routePoi[i].order = i;
       }
+
+      var nowDEnd = new DateTime.now();
+      /*  routePoi[i].status = busPoiRes['resultData'][0]['status'];
+      if (busPoiRes['resultData'][0]['checkin_datetime'].toString() ==
+          "2001-01-01T00:00:00.000Z") {
+        routePoi[i].checkInTime = "";
+      } else {
+        DateTime dt =
+            DateTime.parse(busPoiRes['resultData'][0]['checkin_datetime'])
+                .add(Duration(hours: 7));
+
+        routePoi[i].checkInTime = ChangeFormateDateTimeToTime(dt.toString());
+      }
+ */
+      if (arrStatus.contains("IDLE") || arrStatus.contains("CHECKED-IN")) {
+        canFinishJob = false;
+      } else {
+        canFinishJob = true;
+      }
+
+      /*      for (int i = 0; i < routePoi.length; i++) {
+        routePoi[i].order = i;
+      } */
+
+/*       FToast fToast = FToast();
+      fToast.init(context);
+
+      fToast.showToast(
+          toastDuration: Duration(seconds: 30),
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: 1, horizontal: 10),
+            decoration: BoxDecoration(
+                color: Color.fromRGBO(75, 132, 241, 1),
+                borderRadius: BorderRadius.circular(20)),
+            child: Text(
+              'A : ' +
+                  nowAStart.hour.toString() +
+                  ':' +
+                  nowAStart.minute.toString() +
+                  ':' +
+                  nowAStart.second.toString() +
+                  ':' +
+                  nowAStart.millisecond.toString() +
+                  ' - ' +
+                  nowAEnd.hour.toString() +
+                  ':' +
+                  nowAEnd.minute.toString() +
+                  ':' +
+                  nowAEnd.second.toString() +
+                  ':' +
+                  nowAEnd.millisecond.toString() +
+                  '\n' +
+                  'B : ' +
+                  nowBStart.hour.toString() +
+                  ':' +
+                  nowBStart.minute.toString() +
+                  ':' +
+                  nowBStart.second.toString() +
+                  ':' +
+                  nowBStart.millisecond.toString() +
+                  ' - ' +
+                  nowBEnd.hour.toString() +
+                  ':' +
+                  nowBEnd.minute.toString() +
+                  ':' +
+                  nowBEnd.second.toString() +
+                  ':' +
+                  nowBEnd.millisecond.toString() +
+                  '\n' +
+                  'C : ' +
+                  nowCStart.hour.toString() +
+                  ':' +
+                  nowCStart.minute.toString() +
+                  ':' +
+                  nowCStart.second.toString() +
+                  ':' +
+                  nowCStart.millisecond.toString() +
+                  ' - ' +
+                  nowCEnd.hour.toString() +
+                  ':' +
+                  nowCEnd.minute.toString() +
+                  ':' +
+                  nowCEnd.second.toString() +
+                  ':' +
+                  nowCEnd.millisecond.toString() +
+                  '\n' +
+                  'D : ' +
+                  nowDStart.hour.toString() +
+                  ':' +
+                  nowDStart.minute.toString() +
+                  ':' +
+                  nowDStart.second.toString() +
+                  ':' +
+                  nowDStart.millisecond.toString() +
+                  ' - ' +
+                  nowDEnd.hour.toString() +
+                  ':' +
+                  nowDEnd.minute.toString() +
+                  ':' +
+                  nowDEnd.second.toString() +
+                  ':' +
+                  nowDEnd.millisecond.toString() +
+                  '\n' +
+                  'Req Sec' +
+                  '\n' +
+                  'ReqA : ' +
+                  reqASec.toString() +
+                  '\n' +
+                  'ReqB : ' +
+                  reqBSec.toString() +
+                  '\n' +
+                  'ReqC : ' +
+                  reqCSec.toString() +
+                  '\n' +
+                  'ReqD : ' +
+                  reqDSec.toString() +
+                  '\n' +
+                  'ReqE : ' +
+                  reqESec.toString(),
+              style: toastTextStyle,
+            ),
+          ));
+ */
       busJobInfoId = busJobInfoId;
       currentRouteInfoId = routeId;
 
@@ -374,10 +508,18 @@ class _ProcessWorkState extends State<ProcessWork> {
         if (routePoi.length == 0) {
           isEmpty = true;
         }
+        if (busPoiArr.length == 0) {
+          routePoi = [];
+          isEmpty = true;
+        }
+        if (routePoi.length != 0 && busPoiArr.length != 0) {
+          isEmpty = false;
+        }
       });
+
       await _getMaxRadius();
     } catch (e) {
-      print("RESPONSE WITH HTTP " + e.toString());
+      print("DFWFWFWFWW " + e.toString());
       if (mounted) {
         setState(() {
           isLoading = false;
@@ -730,7 +872,7 @@ class _ProcessWorkState extends State<ProcessWork> {
           isLoading
               ? Expanded(child: CircularLoadingSmall())
               : isEmpty
-                  ? Expanded(child: NotFoundBackground())
+                  ? _notFoundBackgroundWithRefresh()
                   : Expanded(
                       child: Padding(
                           padding: const EdgeInsets.only(left: 0, right: 0),
@@ -739,11 +881,20 @@ class _ProcessWorkState extends State<ProcessWork> {
                               itemCount: routePoi.length,
                               itemBuilder: (BuildContext context, int index) {
                                 RoutePoiInfo routePoiItem = routePoi[index];
-                                return Column(
-                                  children: <Widget>[
-                                    getBox(context, routePoiItem)
-                                  ],
-                                );
+                                if (routePoi.length != 0) {
+                                  return routePoiItem == null
+                                      ? Container()
+                                      : Column(
+                                          children: <Widget>[
+                                            /*   Text(
+                                              routePoiItem.status,
+                                              style: commonHeaderLabelStyle,
+                                            ), */
+                                            /*           getBox(context, routePoiItem) */
+                                            getBox(context, routePoiItem)
+                                          ],
+                                        );
+                                }
                               })))
         ],
       ),
@@ -768,6 +919,8 @@ class _ProcessWorkState extends State<ProcessWork> {
         return _finishedBoxFirst(context, content);
       } else if (content.status == 'SKIP') {
         return _skipingBoxFirst(context, content);
+      } else {
+        return _todoBoxFirst(context, content);
       }
     } else if (content.order == routePoi.length - 1) {
       return _successBox(context, content);
@@ -780,6 +933,8 @@ class _ProcessWorkState extends State<ProcessWork> {
         return _finishedBox(context, content);
       } else if (content.status == 'SKIP') {
         return _skipingBox(context, content);
+      } else {
+        return _todoBox(context, content);
       }
     }
 
@@ -884,7 +1039,9 @@ class _ProcessWorkState extends State<ProcessWork> {
             double.parse(content.longitude));
         print("diffhhh" + diffDistance.toString());
         print("diffhhh" + maxRadius.toString());
+        print("CHECK IN222 : " + status);
         if (diffDistance < maxRadius) {
+          print("CHECK IN222 : " + status);
           var busJobPoiId = await _updateJobPoiStatus(content, "CHECKED-IN");
           Navigator.pop(context); //pop dialog
           setState(() {
@@ -1056,6 +1213,7 @@ class _ProcessWorkState extends State<ProcessWork> {
 
   Future<String> _updateJobPoiStatus(RoutePoiInfo content, String status,
       [String skipReason]) async {
+    print("CHECK IN222 : " + status);
     ///////// GET BUSJOBPOI ID //////////
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
@@ -1187,7 +1345,7 @@ class _ProcessWorkState extends State<ProcessWork> {
               _processInfoFirstOutBound(content)
             else
               _processInfo(content),
-            _processTime(content.checkInTime)
+            _processTime(content)
           ],
         ),
       ),
@@ -1214,7 +1372,7 @@ class _ProcessWorkState extends State<ProcessWork> {
               ],
             ),
             _processInfo(content),
-            _processTime(content.checkInTime)
+            _processTime(content)
           ],
         ),
       ),
@@ -1241,7 +1399,7 @@ class _ProcessWorkState extends State<ProcessWork> {
               ],
             ),
             _processInfo(content),
-            _processTime(content.checkInTime)
+            _processTime(content)
           ],
         ),
       ),
@@ -1271,7 +1429,7 @@ class _ProcessWorkState extends State<ProcessWork> {
               _processInfoFirstOutBound(content)
             else
               _processInfo(content),
-            _processTime(content.checkInTime)
+            _processTime(content)
           ],
         ),
       ),
@@ -1323,7 +1481,7 @@ class _ProcessWorkState extends State<ProcessWork> {
               ],
             ),
             _processInfo(content),
-            _processTime(content.checkInTime)
+            _processTime(content)
           ],
         ),
       ),
@@ -1377,7 +1535,7 @@ class _ProcessWorkState extends State<ProcessWork> {
               _processInfoFirstOutBound(content)
             else
               _processInfo(content),
-            _processTime(content.checkInTime)
+            _processTime(content)
           ],
         ),
       ),
@@ -1398,7 +1556,7 @@ class _ProcessWorkState extends State<ProcessWork> {
             ],
           ),
           _processInfo(content),
-          _processTime(content.checkInTime)
+          _processTime(content)
         ],
       ),
     );
@@ -1423,7 +1581,7 @@ class _ProcessWorkState extends State<ProcessWork> {
               ],
             ),
             _processInfo(content),
-            _processTime(content.checkInTime)
+            _processTime(content)
           ],
         ),
       ),
@@ -1566,11 +1724,12 @@ class _ProcessWorkState extends State<ProcessWork> {
     ));
   }
 
-  Container _processTime(time) {
+  Container _processTime(content) {
+    print("CHECK IN222 : " + content.status);
     return Container(
       padding: EdgeInsets.only(top: 16),
       child: Text(
-        time != "" ? 'Checkin: ${time}' : "",
+        content.status != "IDLE" ? 'Checkin: ${content.checkInTime}' : "",
         style: timeTextStyle,
       ),
     );
@@ -1584,6 +1743,63 @@ class _ProcessWorkState extends State<ProcessWork> {
         style: timeTextStyle,
       ),
     );
+  }
+
+  Container _notFoundBackgroundWithRefresh() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+      child: Center(
+        child: Column(
+          children: <Widget>[
+            Image.asset(
+              'assets/images/not-found.png',
+              height: 175,
+            ),
+            SizedBox(
+              height: 10,
+            ),
+            Text(
+              'ไม่พบข้อมูล',
+              style: notFoundText,
+            ),
+            SizedBox(
+              height: 10,
+            ),
+            Container(
+                child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () async {
+                      await _retryPostBusPoi();
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                          color: Color.fromRGBO(240, 173, 78, 1),
+                          borderRadius: BorderRadius.circular(8)),
+                      padding: EdgeInsets.only(left: 7, right: 7, bottom: 1.5),
+                      child: Text(
+                        "ลองใหม่อีกครั้ง",
+                        style: statusBarTextStyle,
+                      ),
+                    )))
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _retryPostBusPoi() async {
+    final storage = new FlutterSecureStorage();
+    String token = await storage.read(key: 'token');
+    var postBusJobPoiUrl = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['POST_BUS_JOB_POI']}/${busJobInfoId}/${routeId}');
+    DateTime now = new DateTime.now();
+    String isoDate = '0001-01-01T00:00:00.000' + 'Z';
+    var array = [];
+    var postBusJobPoiRes = await postHttpWithToken(postBusJobPoiUrl, token, {});
+
+    var responseCode = jsonDecode(postBusJobPoiRes)['resultCode'];
+    print("WWQDASDASD : " + postBusJobPoiUrl.toString());
+    await _getBusJobInfo();
   }
 
   void _goScanAndList(context, status) {

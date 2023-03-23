@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pgc/responseModel/user.dart';
@@ -9,6 +9,9 @@ import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
+import '../services/http/getHttpWithTokenTimeout.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -37,7 +40,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      print('resume');
+      /*  */
     }
   }
 
@@ -104,66 +107,119 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _goLogin() {
-    Timer(
+    /*  Timer(
         Duration(seconds: 2),
         () => Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => LogInScreen()),
-            ));
+            )); */
+
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (context) => LogInScreen()));
   }
 
   void _goMainMenu() {
     _getProfile();
   }
 
-  void _checkToken() async {
-    setState(() {
-      version = 'V ${dotenv.env['CURRENT_VER']}';
-    });
+  Future<void> _checkToken() async {
+    try {
+      setState(() {
+        version = 'V ${dotenv.env['CURRENT_VER']}';
+      });
 
-    final storage = new FlutterSecureStorage();
-    String userId = await storage.read(key: 'userId');
-    String token = await storage.read(key: 'token');
+      final storage = new FlutterSecureStorage();
+      String userId = await storage.read(key: 'userId');
+      String token = await storage.read(key: 'token');
 
-    if (userId == null || token == null) {
-      _goLogin();
-    } else {
-      _goMainMenu();
+      if (userId == null || token == null) {
+        _goLogin();
+      } else {
+        _goMainMenu();
+      }
+    } catch (e) {
+      FToast fToast = FToast();
+      fToast.init(context);
+
+      fToast.showToast(
+          toastDuration: Duration(seconds: 10),
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: 1, horizontal: 10),
+            decoration: BoxDecoration(
+                color: Color.fromRGBO(75, 132, 241, 1),
+                borderRadius: BorderRadius.circular(20)),
+            /*    child: Text(
+              'เกิดข้อผิดพลาดระหว่างอ่านข้อมูล',
+              style: toastTextStyle,
+            ), */
+            child: Text(
+              e.toString(),
+              style: toastTextStyle,
+            ),
+          ));
     }
   }
 
   Future<void> _getProfile() async {
-    final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    var getUserByMeUrl = Uri.parse(
-        '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
-
     try {
-      var res = await getHttpWithToken(
+      final storage = new FlutterSecureStorage();
+      String token = await storage.read(key: 'token');
+
+      var getUserByMeUrl = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
+
+      var res = await getHttpWithTokenTimeout(
         getUserByMeUrl,
         token,
       );
 
-      user = userFromJson(res) ?? '';
-      await storage.write(key: 'userId', value: user.resultData.userId);
-      await storage.write(
-          key: 'profileUrl', value: user.resultData.imageProfileFile);
-      await storage.write(key: 'firstName', value: user.resultData.firstnameTh);
-      await storage.write(key: 'lastName', value: user.resultData.lastnameTh);
-      await storage.write(
-          key: 'department',
-          value:
-              user.resultData.empInfo.empDepartmentInfo.empDepartmentNameTh ??
-                  "");
+      var checkRes = jsonDecode(res)['resultCode'];
 
-      Timer(
+      if (checkRes == '20000') {
+        user = userFromJson(res) ?? '';
+
+        await storage.write(key: 'userId', value: user.resultData.userId ?? "");
+        await storage.write(
+            key: 'profileUrl', value: user.resultData.imageProfileFile ?? "");
+        await storage.write(
+            key: 'firstName', value: user.resultData.firstnameTh ?? "");
+        await storage.write(
+            key: 'lastName', value: user.resultData.lastnameTh ?? "");
+        await storage.write(
+            key: 'department',
+            value:
+                user.resultData.empInfo.empDepartmentInfo.empDepartmentNameTh ??
+                    "");
+
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => MainMenuScreen()));
+      } else {
+        _goLogin();
+      }
+
+      /*     Timer(
           Duration(seconds: 2),
           () => Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => MainMenuScreen()),
-              ));
+              )); */
     } catch (e) {
-      print("Prod Debug" + e.toString());
+      FToast fToast = FToast();
+      fToast.init(context);
+
+      fToast.showToast(
+          toastDuration: Duration(seconds: 10),
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: 1, horizontal: 10),
+            decoration: BoxDecoration(
+                color: Color.fromRGBO(75, 132, 241, 1),
+                borderRadius: BorderRadius.circular(20)),
+            child: Text(
+              e.toString(),
+              style: toastTextStyle,
+            ),
+          ));
+
       _goLogin();
     }
   }

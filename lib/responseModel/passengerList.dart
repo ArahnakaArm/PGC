@@ -57,12 +57,12 @@ class ResultDataPassengerList {
     this.updatedAt,
     this.deletedAt,
     this.busReserveInfo,
-    this.driverInfo,
     this.carInfo,
     this.userInfo,
     this.routeInfo,
     this.routePoiInfo,
     this.empInfo,
+    this.driverInfo,
   });
 
   String busReservePassengerId;
@@ -82,12 +82,12 @@ class ResultDataPassengerList {
   DateTime updatedAt;
   dynamic deletedAt;
   BusReserveInfo busReserveInfo;
-  Map<String, String> driverInfo;
   CarInfo carInfo;
   UserInfo userInfo;
   RouteInfo routeInfo;
   RoutePoiInfo routePoiInfo;
   EmpInfo empInfo;
+  DriverInfo driverInfo;
 
   factory ResultDataPassengerList.fromJson(Map<String, dynamic> json) =>
       ResultDataPassengerList(
@@ -108,13 +108,12 @@ class ResultDataPassengerList {
         updatedAt: DateTime.parse(json["updated_at"]),
         deletedAt: json["deleted_at"],
         busReserveInfo: BusReserveInfo.fromJson(json["bus_reserve_info"]),
-        driverInfo: Map.from(json["driver_info"])
-            .map((k, v) => MapEntry<String, String>(k, v == null ? null : v)),
         carInfo: CarInfo.fromJson(json["car_info"]),
         userInfo: UserInfo.fromJson(json["user_info"]),
         routeInfo: RouteInfo.fromJson(json["route_info"]),
         routePoiInfo: RoutePoiInfo.fromJson(json["route_poi_info"]),
         empInfo: EmpInfo.fromJson(json["emp_info"]),
+        driverInfo: DriverInfo.fromJson(json["driver_info"]),
       );
 
   Map<String, dynamic> toJson() => {
@@ -135,13 +134,12 @@ class ResultDataPassengerList {
         "updated_at": updatedAt.toIso8601String(),
         "deleted_at": deletedAt,
         "bus_reserve_info": busReserveInfo.toJson(),
-        "driver_info": Map.from(driverInfo)
-            .map((k, v) => MapEntry<String, dynamic>(k, v == null ? null : v)),
         "car_info": carInfo.toJson(),
         "user_info": userInfo.toJson(),
         "route_info": routeInfo.toJson(),
         "route_poi_info": routePoiInfo.toJson(),
         "emp_info": empInfo.toJson(),
+        "driver_info": driverInfo.toJson(),
       };
 }
 
@@ -689,6 +687,102 @@ class RoutePoiInfo {
         "latitude": latitude,
         "longitude": longitude,
         "order": order,
+        "created_at": createdAt.toIso8601String(),
+        "updated_at": updatedAt.toIso8601String(),
+        "deleted_at": deletedAt,
+      };
+}
+
+class DriverInfo {
+  DriverInfo({
+    this.lastLogin,
+    this.userId,
+    this.imageProfileFile,
+    this.driverPriority,
+    this.signatureFile,
+    this.token,
+    this.email,
+    this.password,
+    this.firstnameTh,
+    this.lastnameTh,
+    this.firstnameEn,
+    this.lastnameEn,
+    this.mobileNo,
+    this.dateOfBirth,
+    this.userRoleId,
+    this.userStateId,
+    this.pdpaFlagDatetime,
+    this.pdpaFlag,
+    this.createdAt,
+    this.updatedAt,
+    this.deletedAt,
+  });
+
+  dynamic lastLogin;
+  String userId;
+  dynamic imageProfileFile;
+  dynamic driverPriority;
+  dynamic signatureFile;
+  dynamic token;
+  String email;
+  String password;
+  String firstnameTh;
+  String lastnameTh;
+  dynamic firstnameEn;
+  dynamic lastnameEn;
+  String mobileNo;
+  dynamic dateOfBirth;
+  String userRoleId;
+  String userStateId;
+  dynamic pdpaFlagDatetime;
+  dynamic pdpaFlag;
+  DateTime createdAt;
+  DateTime updatedAt;
+  dynamic deletedAt;
+
+  factory DriverInfo.fromJson(Map<String, dynamic> json) => DriverInfo(
+        lastLogin: json["last_login"],
+        userId: json["user_id"],
+        imageProfileFile: json["image_profile_file"],
+        driverPriority: json["driver_priority"],
+        signatureFile: json["signature_file"],
+        token: json["token"],
+        email: json["email"],
+        password: json["password"],
+        firstnameTh: json["firstname_th"],
+        lastnameTh: json["lastname_th"],
+        firstnameEn: json["firstname_en"],
+        lastnameEn: json["lastname_en"],
+        mobileNo: json["mobile_no"],
+        dateOfBirth: json["date_of_birth"],
+        userRoleId: json["user_role_id"],
+        userStateId: json["user_state_id"],
+        pdpaFlagDatetime: json["pdpa_flag_datetime"],
+        pdpaFlag: json["pdpa_flag"],
+        createdAt: DateTime.parse(json["created_at"]),
+        updatedAt: DateTime.parse(json["updated_at"]),
+        deletedAt: json["deleted_at"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "last_login": lastLogin,
+        "user_id": userId,
+        "image_profile_file": imageProfileFile,
+        "driver_priority": driverPriority,
+        "signature_file": signatureFile,
+        "token": token,
+        "email": email,
+        "password": password,
+        "firstname_th": firstnameTh,
+        "lastname_th": lastnameTh,
+        "firstname_en": firstnameEn,
+        "lastname_en": lastnameEn,
+        "mobile_no": mobileNo,
+        "date_of_birth": dateOfBirth,
+        "user_role_id": userRoleId,
+        "user_state_id": userStateId,
+        "pdpa_flag_datetime": pdpaFlagDatetime,
+        "pdpa_flag": pdpaFlag,
         "created_at": createdAt.toIso8601String(),
         "updated_at": updatedAt.toIso8601String(),
         "deleted_at": deletedAt,

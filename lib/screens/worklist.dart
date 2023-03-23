@@ -41,11 +41,14 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
   List<ResultDatum> busCurrentList = [];
   BusListInfo busListRes;
   List<ResultDatum> busList = [];
+  List<ResultDatum> busListThreeDays = [];
+  List<ResultDatum> busListSum = [];
   bool isHaveCurrentWork = false;
   var isLoading = true;
   var isEmpty = false;
   int indexNextDay = 99;
   String busListCount = "0";
+  int lastIndexToday = 0;
 
   bool isConnent = true;
   /* var notiCounts = "0"; */
@@ -125,18 +128,78 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
     String userId = await storage.read(key: 'userId');
     var busStatus = "CONFIRMED";
     var notCarSys = "CAR_SYS";
-    /*   &allocated_by!%3D${notCarSys} */
+    DateTime nowLocal = new DateTime.now();
+    DateTime now = new DateTime.now().subtract(Duration(hours: 7));
+
+    if (now.day == nowLocal.day) {
+      now = now.subtract(Duration(days: 1));
+    }
+
+    var dateFormatted = now.toIso8601String();
+
+    var startDateToday =
+        dateFormatted.toString().split('T')[0] + 'T14:00:00%2B00:00';
+
+    DateTime nowEndDate = new DateTime.now().subtract(Duration(hours: 7));
+
+    if (now.hour >= 17) {
+      nowEndDate = nowEndDate.add(Duration(days: 1));
+    }
+
+    var endDateFormatted = nowEndDate.toIso8601String();
+
+    var endDateToday =
+        endDateFormatted.toString().split('T')[0] + 'T16:59:59%2B00:00';
+
+    DateTime oneDay = new DateTime.now().subtract(Duration(hours: 7));
+
+    if (oneDay.hour >= 17) {
+      oneDay = oneDay.add(Duration(days: 1));
+    }
+    print("PPPLOKOK5511 :" + now.hour.toString());
+
+    DateTime threeDay = new DateTime.now()
+        .subtract(Duration(hours: 7))
+        .add(Duration(hours: 72));
+
+    if (threeDay.hour >= 17) {
+      threeDay = threeDay.add(Duration(days: 1));
+    }
+
+    var dateFormattedOneDay =
+        oneDay.toIso8601String().toString().split('T')[0] + 'T16:59:59%2B00:00';
+
+    var dateFormattedThreeDay = threeDay.toIso8601String();
+
+    var startDateThreeDays =
+        dateFormattedOneDay.toString().split('T')[0] + 'T17:00:00%2B00:00';
+    var endDateThreeDays =
+        dateFormattedThreeDay.toString().split('T')[0] + 'T16:59:59%2B00:00';
+
+    print("PPPLOKOK55 :" + startDateToday.toString());
+    print("PPPLOKOK55 :" + endDateToday.toString());
+
     var queryString =
-        '?bus_reserve_status_id=${busStatus}&driver_id=${userId}&exclude_allocated_by=${notCarSys}';
+        '?bus_reserve_status_id=${busStatus}&driver_id=${userId}&exclude_allocated_by=${notCarSys}&start_trip_datetime=${startDateToday}&end_trip_datetime=${endDateToday}';
     var getBusInfoListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryString}');
+
+    var queryStringThreeDays =
+        '?bus_reserve_status_id=${busStatus}&driver_id=${userId}&exclude_allocated_by=${notCarSys}&start_trip_datetime=${startDateThreeDays}&end_trip_datetime=${endDateThreeDays}';
+    var getBusInfoListUrlThreeDays = Uri.parse(
+        '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryStringThreeDays}');
 
     try {
       var res = await getHttpWithToken(getBusInfoListUrl, token);
 
       String resultCode = (jsonDecode(res)['resultCode']);
 
-      if (resultCode == "50000") {
+      var resThreeDays =
+          await getHttpWithToken(getBusInfoListUrlThreeDays, token);
+
+      String resultCodeThreeDays = (jsonDecode(resThreeDays)['resultCode']);
+
+      if (resultCode == "50000" || resultCodeThreeDays == "50000") {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('ไม่สามารถโหลดข้อมูลได้')),
         );
@@ -146,73 +209,39 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
             .map((i) => ResultDatum.fromJson(i))
             .toList();
 
+        busListThreeDays = (jsonDecode(resThreeDays)['resultData'] as List)
+            .map((i) => ResultDatum.fromJson(i))
+            .toList();
+
+        print("PPPLOKOK " + busList.length.toString());
+        print("PPPLOKOK " + queryString.toString());
+
+        lastIndexToday = busList.length == 0 ? 0 : busList.length;
+
+        busListSum = [...busList, ...busListThreeDays];
         Comparator<ResultDatum> sortByCreatedAt =
             (a, b) => a.tripDatetime.compareTo(b.tripDatetime);
-        busList.sort(sortByCreatedAt);
+        busListSum.sort(sortByCreatedAt);
 
-        var now = new DateTime.now();
-        /*       print("DATETIME TO MILL : " +
-            now.toUtc().millisecondsSinceEpoch.toString()); */
-        /*   if (busList.length != 0) {
-          print("DATETIME TO MILL : " + busList[0].tripDatetime.toString());
-          print("DATETIME TO MILL : " +
-              busList[0]
-                  .tripDatetime
-                  .add(Duration(hours: 7))
-                  .millisecondsSinceEpoch
-                  .toString());
-          print("DATETIME TO MILL : " + busList[0].docNo);
-        } */
+        /*     busListThreeDays */
+
+        /*     var now = new DateTime.now();
 
         var nowHour = now.hour;
         var nowMinute = now.minute;
         var nowSecond = now.second;
         var nowMiliSecond = now.microsecond;
 
-        busList.removeWhere((item) => (item
-                .tripDatetime
-                /*
-                .add(Duration(hours: nowHour))
-                .add(Duration(minutes: nowMinute))
-                .add(Duration(seconds: nowSecond)) */
-                .millisecondsSinceEpoch <
-            now
-                .subtract(Duration(hours: nowHour))
-                .subtract(Duration(minutes: nowMinute))
-                .subtract(Duration(seconds: nowSecond))
-                .subtract(Duration(seconds: 1))
-                .toUtc()
-                .millisecondsSinceEpoch));
+        busList.removeWhere((item) =>
+            (item.tripDatetime.millisecondsSinceEpoch <
+                now
+                    .subtract(Duration(hours: nowHour))
+                    .subtract(Duration(minutes: nowMinute))
+                    .subtract(Duration(seconds: nowSecond))
+                    .subtract(Duration(seconds: 1))
+                    .toUtc()
+                    .millisecondsSinceEpoch));
 
-        /*      print("DATETIME TO MILL : " +
-            now
-                .subtract(Duration(hours: nowHour))
-                .subtract(Duration(minutes: nowMinute))
-                .subtract(Duration(seconds: nowSecond))
-                .subtract(Duration(seconds: 1))
-                .toUtc()
-                .toString());
-
-        print("DATETIME TO MILL : " + busList[2].tripDatetime.toString()); */
-/* 
-        print("DATETIME TO MILLL : " +
-            busList[2].tripDatetime.millisecondsSinceEpoch.toString()); */
-
-        /*   print("DATETIME TO MILL : " +
-            now
-                .add(Duration(hours: 24 * 3))
-                .add(Duration(hours: 24 - nowHour))
-                .toUtc()
-                .toString()); */
-
-        /*    print("DATETIME TO MILLL : " +
-            now
-                .add(Duration(hours: 24 * 3))
-                .add(Duration(hours: 24 - nowHour))
-                .toUtc()
-                .millisecondsSinceEpoch
-                .toString());
- */
         busList.removeWhere((item) =>
             (item.tripDatetime.millisecondsSinceEpoch >
                 now
@@ -223,20 +252,16 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                     .subtract(Duration(seconds: 1))
                     .toUtc()
                     .millisecondsSinceEpoch));
-
+ */
         setState(() {
-          busListCount = busList.length.toString();
+          busListCount = (busList.length + busListThreeDays.length).toString();
         });
 
-        for (int i = 0; i < busList.length; i++) {
-          /*     print(busList[1].tripDatetime);
-          print(busList[1].tripDatetime.add(Duration(hours: 7)).hour); */
+        /*    for (int i = 0; i < busList.length; i++) {
           print(busList.length);
           var now = DateTime.now();
-          /* var now = DateTime.now().subtract(Duration(hours: 7));
-          print("GGGGGGGG  " + busList[i].tripDatetime.toString()) */
+
           ;
-          /*    var now = DateTime.now().add(Duration(hours: 7)); */
 
           var nowYear = now.toString().substring(0, 4);
           var targetYear = busList[i]
@@ -262,34 +287,23 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
           if (nowDay != targetDay ||
               nowMonth != targetMonth ||
               nowYear != targetYear) {
-            print("break");
             indexNextDay = i;
-            print("break ${busList[i].busJobInfoId}");
-            print("break ${busList[i].docNo}");
-            print("break ${busList[i].tripDatetime}");
-            print("break $nowDay");
-            print("break $indexNextDay");
 
             break;
-          } else {
-            print("GGGGGGGG  " + "NO");
-          }
-          print("GGGGGGGG  " + indexNextDay.toString());
-          print("GGGGGGGG  " + nowYear.toString() + " " + targetYear);
-          print("GGGGGGGG  " + nowMonth.toString() + " " + targetMonth);
-          print("GGGGGGGG  " + nowDay.toString() + " " + targetDay);
-        }
+          } else {}
+        } */
 
         /*    busList.removeWhere((item) =>
             (item.tripDatetime == 0 < now);
 
  */
+
         setState(() {
           /*        busList = busList.reversed.toList(); */
-          busList = ChangeDateFormatBusInfoList(busList);
+          busListSum = ChangeDateFormatBusInfoList(busListSum);
           /* busList = []; */
           isLoading = false;
-          if (busList.length == 0) {
+          if (busListSum.length == 0) {
             isEmpty = true;
           }
         });
@@ -309,14 +323,6 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
       }
     }
   }
-
-  /*  void _deleteNotification() async {
-    setState(() {
-      notiCounts = "0";
-    });
-    final storage = new FlutterSecureStorage();
-    await storage.write(key: 'notiCounts', value: notiCounts);
-  } */
 
   Container _newJob(ctx, busList) {
     return Container(
@@ -359,10 +365,10 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                             padding: const EdgeInsets.only(left: 0, right: 0),
                             child: ListView.builder(
                                 key: PageStorageKey<String>('pageOne'),
-                                itemCount: busList.length,
+                                itemCount: busListSum.length,
                                 itemBuilder: (BuildContext context, int index) {
-                                  ResultDatum busListItem = busList[index];
-                                  if (index == 0 && index != indexNextDay) {
+                                  ResultDatum busListItem = busListSum[index];
+                                  if (busList.length != 0 && index == 0) {
                                     return Column(
                                       children: [
                                         SizedBox(
@@ -730,7 +736,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                     );
                                   }
 
-                                  if (index == indexNextDay) {
+                                  if (index == lastIndexToday) {
                                     return Column(
                                       children: [
                                         SizedBox(
@@ -1419,7 +1425,8 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                       )
                                     ],
                                   );
-                                })))
+                                })),
+                      ),
       ]),
     );
   }
@@ -1429,18 +1436,22 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
     bool canOpen = false;
     ////////////////////// Find Match Day ////////////////
 
-    var currentDay = DateTime.now().toString().substring(8, 10);
+    var currentDay = DateTime.now();
+    var currentDayCompare = currentDay.day;
 
-    var currentTripDate =
-        tripDateTime.add(Duration(hours: 7)).toString().substring(8, 10);
+    var currentTripDate = tripDateTime.add(Duration(hours: 7));
+    var currentTripDateDayCompare = currentTripDate.day;
 
-    print(DateTime.now().toString());
+    var dayCompareOneDay = currentDayCompare - 1;
 
-    print("DATE TIME NOW " + currentDay);
+    if (currentDayCompare == currentTripDateDayCompare ||
+        dayCompareOneDay == currentTripDateDayCompare) canOpen = true;
 
-    print("DATE TIME NOW " + currentTripDate);
-
-    if (currentDay == currentTripDate) canOpen = true;
+    if (currentDayCompare == 1 &&
+        (currentTripDateDayCompare == 30 ||
+            currentTripDateDayCompare == 31 ||
+            currentTripDateDayCompare == 28 ||
+            currentTripDateDayCompare == 29)) canOpen = true;
 
     var carMileEnd = 0;
     var currentWorkCounts = await _checkInProgressWorkCounts();
@@ -1490,8 +1501,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
             SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
           );
         }
-        print("TEST NEW NUM " + carMileEnd.toString());
-        print("TEST NEW NUM " + carInfoId);
+
         ///// END GET CAR MILE ///////
 
         showGeneralDialog(
@@ -1509,14 +1519,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                 tripDateTime,
                 busDoc);
           },
-          /*    transitionBuilder: (_, anim, __, child) {
-      return SlideTransition(
-        position: Tween(begin: Offset(0, 1), end: Offset(0, 0)).animate(anim),
-        child: child,
-      );
-    }, */
         ).then((val) async {
-          print("TEST NEW " + val.toString());
           if (val != null && val != false && val != "") {
             await _updateBus(busJobId, val);
           } else {}
@@ -1546,7 +1549,6 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
           SnackBar(content: Text('ไม่มีงานที่ทำอยู่ในขณะนี้')),
         );
       } else {
-        print("RESPONSE WITH HTTP " + busCurrentList[0].busJobInfoId);
         /*  setState(() {
           notiCounts = "0";
         }); */
@@ -1590,13 +1592,6 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
       );
       return 0;
     }
-
-    /*   var res = await getHttpWithToken(getBusInfoListUrl, token);
-
-    busCurrentList = (jsonDecode(res)['resultData'] as List)
-        .map((i) => ResultDatum.fromJson(i))
-        .toList();
-    return busCurrentList.length; */
   }
 
   void _checkInternet() async {
@@ -1608,10 +1603,8 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
       });
     } //
     else {
-      /*    await _getNotiCounts(); */
       await _getBusInfoList();
       var currentWorkCount = await _checkInProgressWorkCounts();
-      print("currentWorkCount " + currentWorkCount.toString());
 
       if (currentWorkCount > 0) {
         setState(() {
@@ -1626,7 +1619,6 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
   }
 
   Future<void> _updateBus(busJobId, mile) async {
-    print("TEST NEW " + busJobId.toString());
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1637,7 +1629,6 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
 
     final storage = new FlutterSecureStorage();
     String token = await storage.read(key: 'token');
-    //////////// GET REF INFO ///////////////////
     var queryString = '?bus_job_info_id=${busJobId}';
 
     var busRefUrl = Uri.parse(
@@ -1687,7 +1678,6 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
       for (int i = 0; i < busRef.resultData.length; i++) {
         var updateReserveJobUrl = Uri.parse(
             '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_RESERVE_INFO']}/${busRef.resultData[i].busReserveInfoId}');
-        print("TEST NEW NUM " + busRef.resultData.length.toString());
         var updateBusReserveObj = {
           "doc_no": busRef.resultData[i].busReserveInfoInfo.docNo,
           "route_info_id": busRef.resultData[i].busReserveInfoInfo.routeInfoId,
@@ -1730,13 +1720,16 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
           .toList();
 
       var postBusJobPoiUrl = Uri.parse(
-          '${dotenv.env['BASE_API']}${dotenv.env['POST_BUS_JOB_POI']}');
+          '${dotenv.env['BASE_API']}${dotenv.env['POST_BUS_JOB_POI']}/${busJobId}/${routeInfoId}');
       DateTime now = new DateTime.now();
       String isoDate = '0001-01-01T00:00:00.000' + 'Z';
 
       var array = [];
 
-      for (int i = 0; i < routePoiInfoArr.length; i++) {
+      var postBusJobPoiRes =
+          await postHttpWithToken(postBusJobPoiUrl, token, array);
+
+      /*   for (int i = 0; i < routePoiInfoArr.length; i++) {
         var objectArray = {
           'bus_job_info_id': busInfoId,
           'route_info_id': routeInfoId,
@@ -1749,7 +1742,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
 
       var postBusJobPoiRes =
           await postHttpWithToken(postBusJobPoiUrl, token, array);
-
+ */
       /*   for (int i = 0; i < routePoiInfoArr.length; i++) {
         var postBusJobPoiRes =
             await postHttpWithToken(postBusJobPoiUrl, token, {
