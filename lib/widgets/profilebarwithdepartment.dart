@@ -1,12 +1,8 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:badges/badges.dart' as badges;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pgc/responseModel/user.dart';
 import 'package:pgc/screens/setting_screen.dart';
-import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:badges/badges.dart';
 import 'package:connectivity/connectivity.dart';
@@ -119,7 +115,7 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
           Row(
             children: [
               widget.notifinationCount != "0"
-                  ? Badge(
+                  ? badges.Badge(
                       position: BadgePosition.topEnd(top: -5, end: -6),
                       toAnimate: false,
                       shape: BadgeShape.circle,

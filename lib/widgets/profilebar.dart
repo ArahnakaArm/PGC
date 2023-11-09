@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pgc/utilities/constants.dart';
-import 'package:badges/badges.dart';
+import 'package:badges/badges.dart' as badges;
 
 class ProfileBar extends StatefulWidget {
   @override
@@ -29,10 +29,10 @@ class _ProfileBarState extends State<ProfileBar> {
           ),
           Row(
             children: [
-              Badge(
-                position: BadgePosition.topEnd(top: -5, end: -6),
+              badges.Badge(
+                position: badges.BadgePosition.topEnd(top: -5, end: -6),
                 toAnimate: false,
-                shape: BadgeShape.circle,
+                shape: badges.BadgeShape.circle,
                 badgeColor: Color.fromRGBO(255, 0, 0, 1),
                 borderRadius: BorderRadius.circular(8),
                 badgeContent: Container(

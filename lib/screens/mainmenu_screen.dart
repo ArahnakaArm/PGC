@@ -14,7 +14,6 @@ import 'package:pgc/responseModel/user.dart';
 import 'package:pgc/screens/history.dart';
 import 'package:pgc/screens/notification_screen.dart';
 import 'package:pgc/screens/setting_screen.dart';
-import 'package:pgc/screens/unity/message.dart';
 import 'package:pgc/screens/worklist.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/patchHttpWithToken.dart';
@@ -24,13 +23,12 @@ import 'package:pgc/widgets/background.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:badges/badges.dart';
 import 'package:pgc/widgets/dialogbox/callDialogBox.dart';
-import 'package:pgc/widgets/profilebarwithdepartment.dart';
-import 'package:socket_io_client/socket_io_client.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:http/http.dart' as httpp;
+import 'package:badges/badges.dart' as badges;
 
 class MainMenuScreen extends StatefulWidget {
   @override
@@ -336,7 +334,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                     width: 55,
                   ),
                   SizedBox(width: 15),
-                  Badge(
+                  badges.Badge(
                       position: BadgePosition.topEnd(top: -5, end: -35),
                       toAnimate: false,
                       shape: BadgeShape.circle,
@@ -608,7 +606,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                         _deleteNotification();
                         _goNotificationList(context);
                       },
-                      child: Badge(
+                      child: badges.Badge(
                         position: BadgePosition.topEnd(top: -5, end: -6),
                         toAnimate: false,
                         shape: BadgeShape.circle,
