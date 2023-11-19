@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 class Badge extends StatelessWidget {
   final double top;
   final double right;
@@ -6,12 +7,12 @@ class Badge extends StatelessWidget {
   final String value; // what displays inside the badge
   final Color color; // the  background color of the badge - default is red
 
-Badge(
-      {@required this.child,
-      @required this.value,
-      this.color,
-      @required this.top,
-      @required this.right});
+  Badge(
+      {required this.child,
+      required this.value,
+      required this.color,
+      required this.top,
+      required this.right});
 
   @override
   Widget build(BuildContext context) {
@@ -35,10 +36,7 @@ Badge(
             child: Text(
               value,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color:Colors.white
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.white),
             ),
           ),
         )

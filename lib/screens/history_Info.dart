@@ -1,21 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:connectivity/connectivity.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:pgc/model/passData.dart';
 import 'package:pgc/model/passDataFinishJob.dart';
-import 'package:pgc/model/process.dart';
 import 'package:pgc/responseModel/busJobInfo.dart';
-import 'package:pgc/responseModel/busPoi.dart';
 import 'package:pgc/responseModel/busRef.dart';
-
 import 'package:pgc/responseModel/routeInfo.dart';
-import 'package:pgc/screens/checkin.dart';
 import 'package:pgc/screens/confirmfinishjob.dart';
 import 'package:pgc/screens/scanandlist.dart';
 import 'package:pgc/screens/scanandlistoutbound.dart';
@@ -23,45 +19,28 @@ import 'package:pgc/screens/skip_screen.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/putHttpWithToken.dart';
 import 'package:pgc/services/utils/common.dart';
-import 'package:pgc/services/utils/currentLocation.dart';
 import 'package:pgc/widgets/background.dart';
-
 import 'package:pgc/widgets/commonloadingsmall.dart';
-import 'package:pgc/widgets/dialogbox/confirmCheckinDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/confirmSkipDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/errorEmployeeInfoDialogBox.dart';
-import 'package:pgc/widgets/dialogbox/errorScanDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
 import 'package:pgc/widgets/notfoundbackground.dart';
-import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:pgc/utilities/constants.dart';
-import 'package:pgc/model/histories.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:pgc/widgets/profilebarwithdepartmentnoalarm.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class HistoryInfo extends StatefulWidget {
-  const HistoryInfo({Key key}) : super(key: key);
+  const HistoryInfo({Key? key}) : super(key: key);
 
   @override
   _HistoryInfoState createState() => _HistoryInfoState();
 }
 
 class _HistoryInfoState extends State<HistoryInfo> {
-  IO.Socket socket;
-  static const String _kLocationServicesDisabledMessage =
-      'Location services are disabled.';
-  static const String _kPermissionDeniedMessage = 'Permission denied.';
-  static const String _kPermissionDeniedForeverMessage =
-      'Permission denied forever.';
-  static const String _kPermissionGrantedMessage = 'Permission granted.';
-
-  final GeolocatorPlatform _geolocatorPlatform = GeolocatorPlatform.instance;
-
-  StreamSubscription<Position> _positionStreamSubscription;
-  StreamSubscription<ServiceStatus> _serviceStatusStreamSubscription;
+  IO.Socket? socket;
+  StreamSubscription<Position>? _positionStreamSubscription;
   String busJobInfoId = '';
-  BusRef busRef;
+  BusRef? busRef;
   String routeId = '';
   List<RoutePoiInfo> routePoi = [];
   var isLoading = true;
@@ -90,21 +69,11 @@ class _HistoryInfoState extends State<HistoryInfo> {
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        busJobInfoId = ModalRoute.of(context).settings.arguments;
+        busJobInfoId = ModalRoute.of(context)!.settings.arguments as String;
       });
       print(busJobInfoId);
     });
-    // TODO: implement initState
-    /*   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      if (mounted) {
-        print("NOTIC FROM " + context.widget.toStringShort());
-        setState(() {
-          notiCounts = (int.parse(notiCounts) + 1).toString();
-        });
-        final storage = new FlutterSecureStorage();
-        await storage.write(key: 'notiCounts', value: notiCounts);
-      }
-    }); */
+
     _checkInternet();
 
     super.initState();
@@ -113,7 +82,7 @@ class _HistoryInfoState extends State<HistoryInfo> {
   @override
   void dispose() {
     if (_positionStreamSubscription != null) {
-      _positionStreamSubscription.cancel();
+      _positionStreamSubscription?.cancel();
       _positionStreamSubscription = null;
     }
 
@@ -175,8 +144,8 @@ class _HistoryInfoState extends State<HistoryInfo> {
       });
     }
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     var getBusJobInfoUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO']}/${busJobInfoId}');
     var arrStatus = [];
@@ -391,8 +360,8 @@ class _HistoryInfoState extends State<HistoryInfo> {
 
     if (_positionStreamSubscription == null) {
       final storage = new FlutterSecureStorage();
-      String token = await storage.read(key: 'token');
-      String userId = await storage.read(key: 'userId');
+      String? token = await storage.read(key: 'token');
+      String? userId = await storage.read(key: 'userId');
       int socketInterval =
           int.parse(dotenv.env['SOCKET_INTERVAL_MINUTE']) * 1000 * 60;
       final positionStream =
@@ -468,8 +437,8 @@ class _HistoryInfoState extends State<HistoryInfo> {
         socket.onError((data) => print(data)); */
 
         /*        final storage = new FlutterSecureStorage();
-        String token = await storage.read(key: 'token');
-        String userId = await storage.read(key: 'userId');
+        String? token = await storage.read(key: 'token');
+        String? userId = await storage.read(key: 'userId');
 
         var busStatus = "CONFIRMED";
         var queryString = '?bus_reserve_status_id=${busStatus}';
@@ -741,14 +710,6 @@ class _HistoryInfoState extends State<HistoryInfo> {
   }
 
   Widget getBox(context, RoutePoiInfo content) {
-    /*  if (status == 'finished')
-    return _finishedBox(context);
-  else if (status == 'waiting')
-    return _waitingBox(context);
-  else if (status == 'todo')
-    return _todoBox();
-  else if (status == 'success') return _successBox(context); */
-
     if (content.order == 0) {
       if (content.status == 'IDLE') {
         return _todoBoxFirst(context, content);
@@ -773,7 +734,7 @@ class _HistoryInfoState extends State<HistoryInfo> {
       }
     }
 
-    /*  return _waitingBox(context, content); */
+    return Container();
   }
 
   Future<void> _checkInternet() async {
@@ -802,8 +763,8 @@ class _HistoryInfoState extends State<HistoryInfo> {
  */
   Future<void> _getMaxRadius() async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
 
     var getMaxRadiusUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_APP_CONFIG_RADIUS']}');
@@ -833,7 +794,7 @@ class _HistoryInfoState extends State<HistoryInfo> {
       var busJobPoiId = await _getJobPoi(content);
 
       if (_positionStreamSubscription != null) {
-        _positionStreamSubscription.cancel();
+        _positionStreamSubscription?.cancel();
         _positionStreamSubscription = null;
       }
 
@@ -861,7 +822,11 @@ class _HistoryInfoState extends State<HistoryInfo> {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return WillPopScope(onWillPop: () {}, child: LoadingDialogBox());
+          return WillPopScope(
+              onWillPop: () {
+                return Future.value(false);
+              },
+              child: LoadingDialogBox());
         },
       );
       try {
@@ -933,7 +898,9 @@ class _HistoryInfoState extends State<HistoryInfo> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => SkipScreen(),
+                  builder: (context) => SkipScreen(
+                    value: '',
+                  ),
                   settings: RouteSettings(
                     arguments: PassDataModel(
                         busJobPoiId,
@@ -1043,11 +1010,11 @@ class _HistoryInfoState extends State<HistoryInfo> {
   }
 
   Future<String> _updateJobPoiStatus(RoutePoiInfo content, String status,
-      [String skipReason]) async {
+      [String? skipReason]) async {
     ///////// GET BUSJOBPOI ID //////////
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     var routePoiId = content.routePoiInfoId;
     var queryString =
         '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${currentRouteInfoId}';
@@ -1077,7 +1044,7 @@ class _HistoryInfoState extends State<HistoryInfo> {
       "checkin_datetime": isoDate,
       "status": statusToUpdate
     };
-    if (statusToUpdate == "SKIP") {
+    if (statusToUpdate == "SKIP" && skipReason != null) {
       updateBusPoiObj["skip_reason"] = skipReason;
     }
 
@@ -1092,8 +1059,8 @@ class _HistoryInfoState extends State<HistoryInfo> {
   Future<String> _getJobPoi(RoutePoiInfo content) async {
     ///////// GET BUSJOBPOI ID //////////
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     var routePoiId = content.routePoiInfoId;
     var queryString =
         '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${currentRouteInfoId}';

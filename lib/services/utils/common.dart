@@ -248,8 +248,8 @@ List<ResultDatum> ChangeDateFormatBusInfoListDoNotPlus(List<ResultDatum> list) {
 
 Future<String> getNotificationsCount() async {
   final storage = new FlutterSecureStorage();
-  String token = await storage.read(key: 'token');
-  String userId = await storage.read(key: 'userId');
+  String? token = await storage.read(key: 'token');
+  String? userId = await storage.read(key: 'userId');
 
   var queryString = "?is_read=false&receiver_id=${userId}";
   var getNotificationsCountUrl = Uri.parse(

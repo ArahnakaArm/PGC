@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -14,17 +13,16 @@ import 'package:pgc/widgets/background.dart';
 import 'package:pgc/widgets/backpress.dart';
 import 'package:pgc/widgets/dialogbox/confirmLogoutDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
-import 'package:pgc/widgets/profilebarwithdepartment.dart';
 
 class SettingScreen extends StatefulWidget {
-  const SettingScreen({Key key}) : super(key: key);
+  const SettingScreen({Key? key}) : super(key: key);
 
   @override
   _SettingScreenState createState() => _SettingScreenState();
 }
 
 class _SettingScreenState extends State<SettingScreen> {
-  List<DeviceTokenArray> deviceTokenArr;
+  List<DeviceTokenArray> deviceTokenArr = [];
   String version = "";
   @override
   void initState() {
@@ -80,7 +78,7 @@ class _SettingScreenState extends State<SettingScreen> {
         return ConfirmLogoutDialogBox();
       },
     ).then((value) async {
-      if (value) {
+      if (value != null) {
         _goLoginScreen();
       } else {}
     });
@@ -104,9 +102,9 @@ class _SettingScreenState extends State<SettingScreen> {
 
   Future<void> _deleteDeviceToken() async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
-    String deviceToken = await storage.read(key: 'deviceToken');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
+    String? deviceToken = await storage.read(key: 'deviceToken');
 
     try {
       showDialog(

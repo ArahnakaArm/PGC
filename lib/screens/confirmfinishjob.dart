@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-
-import 'package:connectivity/connectivity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:exif/exif.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -12,18 +10,14 @@ import 'package:pgc/model/passDataFinishJob.dart';
 import 'package:pgc/responseModel/busJobInfo.dart';
 import 'package:pgc/responseModel/busRef.dart';
 import 'package:pgc/screens/successfinishjob.dart';
-import 'package:pgc/screens/take_photo.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/putHttpWithToken.dart';
 import 'package:pgc/services/utils/common.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/widgets/backpressincontainer.dart';
 import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
-import 'package:pgc/widgets/profilebar.dart';
 import 'package:pgc/utilities/constants.dart';
-import 'package:pgc/model/passenger.dart';
 import 'dart:async';
-import 'package:pgc/widgets/tabbutton.dart';
 import 'package:pgc/widgets/commonsmallfinishjobbackground.dart';
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
@@ -31,26 +25,26 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:image/image.dart' as img;
 
 class ConfirmFinishJob extends StatefulWidget {
-  const ConfirmFinishJob({Key key}) : super(key: key);
+  const ConfirmFinishJob();
 
   @override
   _ConfirmFinishJobState createState() => _ConfirmFinishJobState();
 }
 
 class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
-  BusRef busRef;
-  PassDataFinishJobModel passedData;
+  BusRef? busRef;
+  PassDataFinishJobModel? passedData;
   String routeId = '';
   String originLocation = '';
   String destinationLocation = '';
   String currentDateTime = '';
-  CameraDescription _cameraDescription;
+  CameraDescription? _cameraDescription;
   String _imagePath = "";
   TextEditingController milesEdit = new TextEditingController();
   String busJobInfoId = "";
   String finishDocNo = "";
-  int mileStart;
-  File imageFile;
+  int? mileStart;
+  File? imageFile;
   var notiCounts = "0";
   final ImagePicker _picker = ImagePicker();
 
@@ -78,15 +72,15 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        passedData = ModalRoute.of(context).settings.arguments == null
+        passedData = ModalRoute.of(context)?.settings.arguments == null
             ? PassDataFinishJobModel('', '', '', '', 0)
-            : ModalRoute.of(context).settings.arguments
+            : ModalRoute.of(context)?.settings.arguments
                 as PassDataFinishJobModel;
 
-        busJobInfoId = passedData.busJobInfoId;
+        busJobInfoId = passedData!.busJobInfoId;
       });
 
-      _checkInternet(passedData.busJobInfoId);
+      _checkInternet(passedData?.busJobInfoId);
       _setCurrentTime();
       /*  _getBusJobPoiInfo(passedData.busJobPoiId); */
     });
@@ -109,17 +103,20 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
 
   void _getNotiCounts() async {
     final storage = new FlutterSecureStorage();
-    String notiCountsStorage = await storage.read(key: 'notiCounts');
+    String? notiCountsStorage = await storage.read(key: 'notiCounts');
     print("NOTIC FROM " + notiCounts);
-    setState(() {
-      notiCounts = notiCountsStorage;
-    });
+
+    if (notiCountsStorage != null) {
+      setState(() {
+        notiCounts = notiCountsStorage;
+      });
+    }
   }
 
   Future<void> _getBusJobInfo(busJobInfoId) async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     try {
       var getBusJobInfoUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO']}/${busJobInfoId}');
@@ -238,7 +235,7 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
                                     if (await Permission.camera
                                         .request()
                                         .isGranted) {
-                                      final XFile image =
+                                      final XFile? image =
                                           await _picker.pickImage(
                                               source: ImageSource.camera,
                                               maxWidth: 700,
@@ -256,10 +253,11 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
                                       /*  await _callHttpImage(_imagePath); */
                                     }
                                   } else if (status.isGranted) {
-                                    final XFile image = await _picker.pickImage(
-                                        source: ImageSource.camera,
-                                        maxWidth: 700,
-                                        maxHeight: 1200);
+                                    final XFile? image =
+                                        await _picker.pickImage(
+                                            source: ImageSource.camera,
+                                            maxWidth: 700,
+                                            maxHeight: 1200);
 
                                     if (image != null) {
                                       var imagePath = image.path;
@@ -314,7 +312,7 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('กรุณากรอกเลขไมล์')),
       );
-    } else if (mileStart > int.parse(miles)) {
+    } else if (mileStart! > int.parse(miles)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text('กรุณากรอกเลขไมล์สิ้นสุดให้มากกว่าเลขไมล์เริ่มต้น')),
@@ -385,11 +383,11 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
 
     final originalImage = img.decodeImage(imageBytes);
 
-    final height = originalImage.height;
-    final width = originalImage.width;
+    final height = originalImage?.height;
+    final width = originalImage?.width;
 
     // Let's check for the image size
-    if (height >= width) {
+    if (height! >= width!) {
       print("CAMARA DEBUG " +
           "YES " +
           height.toString() +
@@ -408,73 +406,40 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
     img.Image fixedImage;
 
     if (height < width) {
-      // rotate
-      /*   if (exifData['Image Orientation'].printable.contains('Horizontal')) {
-        fixedImage = img.copyRotate(originalImage, 180);
+      if (exifData['Image Orientation']!.printable.contains('Horizontal')) {
+        fixedImage = img.copyRotate(originalImage!, 0);
         print("CAMARA DEBUG " +
             "CASE  1 " +
             height.toString() +
             " " +
             width.toString());
-      } else if (exifData['Image Orientation'].printable.contains('180')) {
-        fixedImage = img.copyRotate(originalImage, -90);
+      } else if (exifData['Image Orientation']!.printable.contains('180')) {
+        fixedImage = img.copyRotate(originalImage!, -90);
+      } else if (exifData['Image Orientation']!.printable.contains('CCW')) {
+        fixedImage = img.copyRotate(originalImage!, 180);
         print("CAMARA DEBUG " +
             "CASE  2 " +
             height.toString() +
             " " +
             width.toString());
       } else {
-        fixedImage = img.copyRotate(originalImage, 0);
-        print("CAMARA DEBUG " +
-            "CASE  3 " +
-            height.toString() +
-            " " +
-            width.toString());
-      } */
-
-      if (exifData['Image Orientation'].printable.contains('Horizontal')) {
-        fixedImage = img.copyRotate(originalImage, 0);
-        print("CAMARA DEBUG " +
-            "CASE  1 " +
-            height.toString() +
-            " " +
-            width.toString());
-      } else if (exifData['Image Orientation'].printable.contains('180')) {
-        fixedImage = img.copyRotate(originalImage, -90);
-      } else if (exifData['Image Orientation'].printable.contains('CCW')) {
-        fixedImage = img.copyRotate(originalImage, 180);
-        print("CAMARA DEBUG " +
-            "CASE  2 " +
-            height.toString() +
-            " " +
-            width.toString());
-      } else {
-        fixedImage = img.copyRotate(originalImage, 0);
+        fixedImage = img.copyRotate(originalImage!, 0);
         print("CAMARA DEBUG " +
             "CASE  3 " +
             height.toString() +
             " " +
             width.toString());
       }
+
+      return await originalFile.writeAsBytes(img.encodeJpg(fixedImage));
     }
 
-    print("CAMARA DEBUG " + "NO " + height.toString() + " " + width.toString());
-
-    // Here you can select whether you'd like to save it as png
-    // or jpg with some compression
-    // I choose jpg with 100% quality
-    final fixedFile =
-        await originalFile.writeAsBytes(img.encodeJpg(fixedImage));
-
-    /*   setState(() {
-      imageFile = fixedFile;
-    }); */
-    return fixedFile;
+    return originalFile;
   }
 
   Future<void> _callHttpImage(String path, endMiles) async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
+    String? token = await storage.read(key: 'token');
 
     showDialog(
       context: context,
@@ -484,7 +449,7 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
       },
     );
     try {
-      Map<String, String> headers = {HttpHeaders.authorizationHeader: token};
+      Map<String, String> headers = {HttpHeaders.authorizationHeader: token!};
       Uri uri =
           Uri.parse('${dotenv.env['BASE_API']}${dotenv.env['POST_IMAGE']}');
       http.MultipartRequest request = http.MultipartRequest('POST', uri);
@@ -532,32 +497,33 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
 
       busRef = busRefFromJson(busRefRes);
 
-      String busReserveInfoId = busRef.resultData[0].busReserveInfoId;
+      String busReserveInfoId = busRef!.resultData[0].busReserveInfoId;
       final sevenHourAgo =
           (new DateTime.now()).subtract(new Duration(minutes: 60 * 7));
 
       String isoDate = sevenHourAgo.toIso8601String() + 'Z';
       print("TEST NEW NUM " + endMiles);
+
       var updateBusJobObj = {
-        "doc_no": busRef.resultData[0].busJobInfoInfo.docNo,
+        "doc_no": busRef!.resultData[0].busJobInfoInfo.docNo,
         "car_mileage_start":
-            busRef.resultData[0].busJobInfoInfo.carMileageStart,
+            busRef!.resultData[0].busJobInfoInfo.carMileageStart,
         "car_mileage_end": int.parse(endMiles),
         "destination_image_path": imagePath == null ? '' : imagePath,
-        "route_info_id": busRef.resultData[0].busJobInfoInfo.routeInfoId,
+        "route_info_id": busRef!.resultData[0].busJobInfoInfo.routeInfoId,
         "trip_datetime":
-            busRef.resultData[0].busJobInfoInfo.tripDatetime.toString(),
-        "driver_id": busRef.resultData[0].busJobInfoInfo.driverId,
-        "car_info_id": busRef.resultData[0].busJobInfoInfo.carInfoId,
-        "number_of_seat": busRef.resultData[0].busJobInfoInfo.numberOfSeat,
+            busRef!.resultData[0].busJobInfoInfo.tripDatetime.toString(),
+        "driver_id": busRef!.resultData[0].busJobInfoInfo.driverId,
+        "car_info_id": busRef!.resultData[0].busJobInfoInfo.carInfoId,
+        "number_of_seat": busRef!.resultData[0].busJobInfoInfo.numberOfSeat,
         "number_of_reserved":
-            busRef.resultData[0].busJobInfoInfo.numberOfReserved,
+            busRef!.resultData[0].busJobInfoInfo.numberOfReserved,
         "bus_reserve_status_id": "COMPLETED",
         "completed_at": isoDate,
         "completed_by": userId
       };
 
-      finishDocNo = busRef.resultData[0].busJobInfoInfo.docNo;
+      finishDocNo = busRef!.resultData[0].busJobInfoInfo.docNo;
 
       var updateJobUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_JOB_INFO']}/${busJobInfoId}');
@@ -565,29 +531,28 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
       var updateJobInfo =
           await putHttpWithToken(updateJobUrl, token, updateBusJobObj);
 
-      for (int i = 0; i < busRef.resultData.length; i++) {
+      for (int i = 0; i < busRef!.resultData.length; i++) {
         var updateReserveJobUrl = Uri.parse(
-            '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_RESERVE_INFO']}/${busRef.resultData[i].busReserveInfoId}');
+            '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_RESERVE_INFO']}/${busRef!.resultData[i].busReserveInfoId}');
         var updateBusReserveObj = {
-          "doc_no": busRef.resultData[i].busReserveInfoInfo.docNo,
-          "route_info_id": busRef.resultData[i].busReserveInfoInfo.routeInfoId,
+          "doc_no": busRef!.resultData[i].busReserveInfoInfo.docNo,
+          "route_info_id": busRef!.resultData[i].busReserveInfoInfo.routeInfoId,
           "trip_datetime":
-              busRef.resultData[i].busReserveInfoInfo.tripDatetime.toString(),
+              busRef!.resultData[i].busReserveInfoInfo.tripDatetime.toString(),
           "is_normal_time":
-              busRef.resultData[i].busReserveInfoInfo.isNormalTime,
+              busRef!.resultData[i].busReserveInfoInfo.isNormalTime,
           "emp_department_id":
-              busRef.resultData[i].busReserveInfoInfo.empDepartmentId,
+              busRef!.resultData[i].busReserveInfoInfo.empDepartmentId,
           "bus_reserve_status_id": "COMPLETED",
-          "bus_reserve_reason_text": busRef
+          "bus_reserve_reason_text": busRef!
                       .resultData[i].busReserveInfoInfo.busReserveReasonText ==
                   null
               ? ''
-              : busRef.resultData[i].busReserveInfoInfo.busReserveReasonText,
+              : busRef!.resultData[i].busReserveInfoInfo.busReserveReasonText,
           "car_mileage": int.parse(endMiles),
         };
 
-        var updateReserveJob = await putHttpWithToken(
-            updateReserveJobUrl, token, updateBusReserveObj);
+        await putHttpWithToken(updateReserveJobUrl, token, updateBusReserveObj);
       }
 
       Navigator.pop(context);

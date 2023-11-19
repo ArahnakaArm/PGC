@@ -1,16 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pgc/responseModel/deviceToken.dart';
-import 'package:pgc/screens/login_screen.dart';
-import 'package:pgc/services/http/deleteHttpWithToken.dart';
-import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/utilities/constants.dart';
 
 class ConfirmLogoutDialogBox extends StatelessWidget {
-  List<DeviceTokenArray> deviceTokenArr;
+  List<DeviceTokenArray>? deviceTokenArr;
   @override
   Widget build(BuildContext context) {
     return Column(

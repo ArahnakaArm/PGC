@@ -10,9 +10,9 @@ String userToJson(User data) => json.encode(data.toJson());
 
 class User {
   User({
-    this.resultCode,
-    this.developerMessage,
-    this.resultData,
+    required this.resultCode,
+    required this.developerMessage,
+    required this.resultData,
   });
 
   String resultCode;
@@ -34,30 +34,30 @@ class User {
 
 class ResultData {
   ResultData({
-    this.lastLogin,
-    this.userId,
-    this.imageProfileFile,
+    required this.lastLogin,
+    required this.userId,
+    required this.imageProfileFile,
     this.driverPriority,
     this.signatureFile,
     this.token,
-    this.email,
-    this.firstnameTh,
-    this.lastnameTh,
+    required this.email,
+    required this.firstnameTh,
+    required this.lastnameTh,
     this.firstnameEn,
     this.lastnameEn,
-    this.mobileNo,
+    required this.mobileNo,
     this.dateOfBirth,
-    this.userRoleId,
-    this.userStateId,
+    required this.userRoleId,
+    required this.userStateId,
     this.pdpaFlagDatetime,
     this.pdpaFlag,
-    this.createdAt,
-    this.updatedAt,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
-    this.driverLicenseInfo,
-    this.userRoleInfo,
-    this.userStateInfo,
-    this.empInfo,
+    required this.driverLicenseInfo,
+    required this.userRoleInfo,
+    required this.userStateInfo,
+    required this.empInfo,
   });
 
   DateTime lastLogin;
@@ -144,15 +144,15 @@ class ResultData {
 
 class EmpInfo {
   EmpInfo({
-    this.empId,
-    this.empCode,
-    this.userId,
-    this.empPositionId,
-    this.empDepartmentId,
-    this.createdAt,
-    this.updatedAt,
+    required this.empId,
+    required this.empCode,
+    required this.userId,
+    required this.empPositionId,
+    required this.empDepartmentId,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
-    this.empDepartmentInfo,
+    required this.empDepartmentInfo,
   });
 
   String empId;
@@ -193,13 +193,13 @@ class EmpInfo {
 
 class EmpDepartmentInfo {
   EmpDepartmentInfo({
-    this.empDepartmentId,
-    this.address,
-    this.departmentCode,
-    this.empDepartmentNameTh,
-    this.empDepartmentNameEn,
-    this.createdAt,
-    this.updatedAt,
+    required this.empDepartmentId,
+    required this.address,
+    required this.departmentCode,
+    required this.empDepartmentNameTh,
+    required this.empDepartmentNameEn,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
   });
 
@@ -238,11 +238,11 @@ class EmpDepartmentInfo {
 
 class UserRoleInfo {
   UserRoleInfo({
-    this.userRoleId,
-    this.userRoleNameTh,
-    this.userRoleNameEn,
-    this.createdAt,
-    this.updatedAt,
+    required this.userRoleId,
+    required this.userRoleNameTh,
+    required this.userRoleNameEn,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
   });
 
@@ -274,11 +274,11 @@ class UserRoleInfo {
 
 class UserStateInfo {
   UserStateInfo({
-    this.userStateId,
-    this.userStateNameTh,
-    this.userStateNameEn,
-    this.createdAt,
-    this.updatedAt,
+    required this.userStateId,
+    required this.userStateNameTh,
+    required this.userStateNameEn,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
   });
 

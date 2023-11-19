@@ -1,25 +1,19 @@
 import 'dart:convert';
-
-import 'package:connectivity/connectivity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pgc/model/passData.dart';
-import 'package:pgc/screens/scanandlist.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/putHttpWithToken.dart';
-
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/widgets/backpressincontainer.dart';
 import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
-import 'package:pgc/widgets/profilebar.dart';
 import 'package:pgc/utilities/constants.dart';
-import 'package:pgc/model/histories.dart';
-import 'package:pgc/widgets/tabbutton.dart';
 import 'package:pgc/widgets/commonsmallcheckinbackground.dart';
 
 class SkipScreen extends StatefulWidget {
-  const SkipScreen({Key key, this.value}) : super(key: key);
+  const SkipScreen({Key? key, required this.value}) : super(key: key);
   final String value;
 
   @override
@@ -31,7 +25,7 @@ class _SkipScreenState extends State<SkipScreen> {
   int passengerMaxCounts = 0;
   int passengerUsedCounts = 0;
   String status = '';
-  PassDataModel passedData;
+  PassDataModel? passedData;
   String currentBusJobPoiId = '';
   var locationName = "";
   var checkInTime = "";
@@ -41,17 +35,18 @@ class _SkipScreenState extends State<SkipScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        passedData = ModalRoute.of(context).settings.arguments == null
-            ? ''
-            : ModalRoute.of(context).settings.arguments as PassDataModel;
+        passedData = (ModalRoute.of(context)?.settings.arguments == null
+                ? ''
+                : ModalRoute.of(context)?.settings.arguments as PassDataModel)
+            as PassDataModel?;
 
-        locationName = passedData.locationName;
-        status = passedData.status;
-        passengerMaxCounts = passedData.passengerCount;
-        passengerUsedCounts = passedData.passengerCountUsed;
-        currentBusJobPoiId = passedData.busJobPoiId;
+        locationName = passedData!.locationName;
+        status = passedData!.status;
+        passengerMaxCounts = passedData!.passengerCount;
+        passengerUsedCounts = passedData!.passengerCountUsed;
+        currentBusJobPoiId = passedData!.busJobPoiId;
       });
-      _checkInternet(passedData.busJobPoiId);
+      _checkInternet(passedData!.busJobPoiId);
       /*  _getBusJobPoiInfo(passedData.busJobPoiId); */
     });
   }
@@ -106,9 +101,9 @@ class _SkipScreenState extends State<SkipScreen> {
                           height: 2,
                           color: Color.fromRGBO(51, 154, 223, 1),
                         ),
-                        onChanged: (String newValue) {
+                        onChanged: (String? newValue) {
                           setState(() {
-                            dropdownValue = newValue;
+                            dropdownValue = newValue!;
                           });
                         },
                         items: <String>[
@@ -209,8 +204,8 @@ class _SkipScreenState extends State<SkipScreen> {
     );
     ///////// GET BUSJOBPOI ID //////////
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     try {
       var getBusPoiUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_POI']}/${busJobPoiId}');

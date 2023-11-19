@@ -10,10 +10,10 @@ String busPoiToJson(BusPoi data) => json.encode(data.toJson());
 
 class BusPoi {
   BusPoi({
-    this.resultCode,
-    this.developerMessage,
-    this.resultData,
-    this.rowCount,
+    required this.resultCode,
+    required this.developerMessage,
+    required this.resultData,
+    required this.rowCount,
   });
 
   String resultCode;
@@ -39,16 +39,16 @@ class BusPoi {
 
 class ResultDatum {
   ResultDatum({
-    this.busJobPoiId,
-    this.busJobInfoId,
-    this.routeInfoId,
-    this.routePoiInfoId,
-    this.checkinDatetime,
-    this.status,
-    this.createdAt,
-    this.updatedAt,
+    required this.busJobPoiId,
+    required this.busJobInfoId,
+    required this.routeInfoId,
+    required this.routePoiInfoId,
+    required this.checkinDatetime,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
-    this.routeInfo,
+    required this.routeInfo,
   });
 
   String busJobPoiId;
@@ -92,21 +92,21 @@ class ResultDatum {
 
 class RouteInfo {
   RouteInfo({
-    this.routeInfoId,
-    this.routeCode,
-    this.originRouteNameTh,
-    this.originRouteNameEn,
-    this.originRouteNameMm,
-    this.originRouteNameKh,
-    this.destinationRouteNameTh,
-    this.destinationRouteNameEn,
-    this.destinationRouteNameMm,
-    this.destinationRouteNameKh,
-    this.tripType,
-    this.status,
-    this.createdBy,
-    this.createdAt,
-    this.updatedAt,
+    required this.routeInfoId,
+    required this.routeCode,
+    required this.originRouteNameTh,
+    required this.originRouteNameEn,
+    required this.originRouteNameMm,
+    required this.originRouteNameKh,
+    required this.destinationRouteNameTh,
+    required this.destinationRouteNameEn,
+    required this.destinationRouteNameMm,
+    required this.destinationRouteNameKh,
+    required this.tripType,
+    required this.status,
+    required this.createdBy,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
   });
 

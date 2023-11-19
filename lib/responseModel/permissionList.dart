@@ -11,10 +11,10 @@ String permissionListToJson(PermissionList data) => json.encode(data.toJson());
 
 class PermissionList {
   PermissionList({
-    this.resultCode,
-    this.developerMessage,
-    this.resultData,
-    this.rowCount,
+    required this.resultCode,
+    required this.developerMessage,
+    required this.resultData,
+    required this.rowCount,
   });
 
   String resultCode;
@@ -40,16 +40,16 @@ class PermissionList {
 
 class PermissionResult {
   PermissionResult({
-    this.userPermissionId,
-    this.userId,
-    this.permissionId,
-    this.permissionRoleId,
-    this.createdAt,
-    this.updatedAt,
+    required this.userPermissionId,
+    required this.userId,
+    required this.permissionId,
+    required this.permissionRoleId,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
-    this.userInfo,
-    this.permissionRoleInfo,
-    this.permissionInfo,
+    required this.userInfo,
+    required this.permissionRoleInfo,
+    required this.permissionInfo,
   });
 
   String userPermissionId;
@@ -94,9 +94,9 @@ class PermissionResult {
 
 class PermissionInfo {
   PermissionInfo({
-    this.permissionId,
-    this.permissionSystemName,
-    this.order,
+    required this.permissionId,
+    required this.permissionSystemName,
+    required this.order,
   });
 
   String permissionId;
@@ -118,10 +118,10 @@ class PermissionInfo {
 
 class PermissionRoleInfo {
   PermissionRoleInfo({
-    this.permissionRoleId,
-    this.permissionId,
-    this.permissionRoleName,
-    this.order,
+    required this.permissionRoleId,
+    required this.permissionId,
+    required this.permissionRoleName,
+    required this.order,
   });
 
   String permissionRoleId;
@@ -147,26 +147,26 @@ class PermissionRoleInfo {
 
 class UserInfo {
   UserInfo({
-    this.lastLogin,
-    this.userId,
+    required this.lastLogin,
+    required this.userId,
     this.imageProfileFile,
     this.driverPriority,
     this.signatureFile,
     this.token,
-    this.email,
-    this.password,
-    this.firstnameTh,
-    this.lastnameTh,
+    required this.email,
+    required this.password,
+    required this.firstnameTh,
+    required this.lastnameTh,
     this.firstnameEn,
     this.lastnameEn,
-    this.mobileNo,
+    required this.mobileNo,
     this.dateOfBirth,
-    this.userRoleId,
-    this.userStateId,
+    required this.userRoleId,
+    required this.userStateId,
     this.pdpaFlagDatetime,
     this.pdpaFlag,
-    this.createdAt,
-    this.updatedAt,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
   });
 

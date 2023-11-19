@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:pgc/utilities/constants.dart';
 
 class EmployeeInfoDialogBox extends StatelessWidget {
-  String imageUrl;
-  String firstName;
-  String lastName;
-  String employeeId;
-  String departmentName;
+  String imageUrl = '';
+  String firstName = '';
+  String lastName = '';
+  String employeeId = '';
+  String departmentName = '';
   bool haveImage = false;
 
   @override
@@ -35,7 +35,11 @@ class EmployeeInfoDialogBox extends StatelessWidget {
             ),
             Expanded(
               child: Container(
-                child: haveImage ? NetworkImage('' ?? "") : Container(),
+                child: haveImage
+                    ? Image(
+                        image: NetworkImage(''),
+                      )
+                    : Container(),
                 margin:
                     EdgeInsets.only(left: 50, right: 50, top: 15, bottom: 60),
                 decoration: BoxDecoration(

@@ -1,7 +1,6 @@
 import 'dart:convert';
 
-import 'package:connectivity/connectivity.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -13,10 +12,7 @@ import 'package:pgc/widgets/background.dart';
 import 'package:pgc/widgets/commonloading.dart';
 import 'package:pgc/widgets/nointernetbackground.dart';
 import 'package:pgc/widgets/notfoundbackground.dart';
-import 'package:pgc/widgets/profilebar.dart';
 import 'package:pgc/utilities/constants.dart';
-import 'package:pgc/model/histories.dart';
-import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:pgc/widgets/profilebarwithdepartmentnoalarm.dart';
 
 class History extends StatefulWidget {
@@ -25,7 +21,7 @@ class History extends StatefulWidget {
 }
 
 class _HistoryState extends State<History> {
-  BusListInfo busListRes;
+  BusListInfo? busListRes;
   List<ResultDatum> busList = [];
   List<ResultDatum> busListCancel = [];
   var isLoading = true;
@@ -34,17 +30,6 @@ class _HistoryState extends State<History> {
   var notiCounts = "0";
   @override
   void initState() {
-    // TODO: implement initState
-    /*  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      if (mounted) {
-        print("NOTIC FROM " + context.widget.toStringShort());
-        setState(() {
-          notiCounts = (int.parse(notiCounts) + 1).toString();
-        });
-        final storage = new FlutterSecureStorage();
-        await storage.write(key: 'notiCounts', value: notiCounts);
-      }
-    }); */
     _checkInternet();
     super.initState();
   }
@@ -126,11 +111,9 @@ class _HistoryState extends State<History> {
                                                                 mainAxisAlignment:
                                                                     MainAxisAlignment
                                                                         .spaceBetween,
-                                                                children: <
-                                                                    Widget>[
+                                                                children: <Widget>[
                                                                   Row(
-                                                                    children: <
-                                                                        Widget>[
+                                                                    children: <Widget>[
                                                                       Image
                                                                           .asset(
                                                                         'assets/images/clipboard.png',
@@ -155,8 +138,7 @@ class _HistoryState extends State<History> {
                                                                   ),
                                                                   Container(
                                                                       width: 90,
-                                                                      padding: const EdgeInsets
-                                                                              .only(
+                                                                      padding: const EdgeInsets.only(
                                                                           left:
                                                                               3,
                                                                           right:
@@ -197,11 +179,9 @@ class _HistoryState extends State<History> {
                                                               crossAxisAlignment:
                                                                   CrossAxisAlignment
                                                                       .start,
-                                                              children: <
-                                                                  Widget>[
+                                                              children: <Widget>[
                                                                 Row(
-                                                                  children: <
-                                                                      Widget>[
+                                                                  children: <Widget>[
                                                                     Text("◉",
                                                                         style:
                                                                             TextStyle(
@@ -254,8 +234,7 @@ class _HistoryState extends State<History> {
                                                                   ],
                                                                 ),
                                                                 Row(
-                                                                  children: <
-                                                                      Widget>[
+                                                                  children: <Widget>[
                                                                     Text('◉',
                                                                         style:
                                                                             TextStyle(
@@ -295,8 +274,7 @@ class _HistoryState extends State<History> {
                                                                   ],
                                                                 ),
                                                                 Row(
-                                                                  children: <
-                                                                      Widget>[
+                                                                  children: <Widget>[
                                                                     Text(
                                                                       '◉',
                                                                       maxLines:
@@ -351,8 +329,7 @@ class _HistoryState extends State<History> {
                                                                   ],
                                                                 ),
                                                                 Row(
-                                                                  children: <
-                                                                      Widget>[
+                                                                  children: <Widget>[
                                                                     Text(
                                                                       '◉',
                                                                       maxLines:
@@ -438,8 +415,8 @@ class _HistoryState extends State<History> {
 
   Future<void> _getBusInfoList() async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     var busStatus = "COMPLETED";
     var queryString = '?bus_reserve_status_id=${busStatus}&driver_id=${userId}';
     var getBusInfoListUrl = Uri.parse(
@@ -489,35 +466,22 @@ class _HistoryState extends State<History> {
         ),
       ),
     ).then((value) async {
-      await _checkInternet();
+      _checkInternet();
     });
   }
 
   void _checkInternet() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
     if (connectivityResult == ConnectivityResult.none) {
-      /*     ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
-      ); */
       setState(() {
         isLoading = false;
         isConnent = false;
       });
     } //
     else {
-      /*    await _getNotiCounts(); */
       await _getBusInfoList();
     }
   }
-
-  /*  Future<void> _getNotiCounts() async {
-    final storage = new FlutterSecureStorage();
-    String notiCountsStorage = await storage.read(key: 'notiCounts');
-    print("NOTIC FROM " + notiCountsStorage);
-    setState(() {
-      notiCounts = notiCountsStorage;
-    });
-  } */
 }
 
 Container _headerWidget(imagePath, headerText) {

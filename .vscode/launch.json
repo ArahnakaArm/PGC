@@ -5,6 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "PCG (DEV)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+        },
+        {
             "name": "gps_tracking_flutter",
             "request": "launch",
             "type": "dart"

@@ -1,31 +1,26 @@
-import 'dart:io';
-
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pgc/screens/mainmenu_screen.dart';
 import 'package:pgc/widgets/background.dart';
-import 'package:pgc/widgets/profilebar.dart';
 import 'package:pgc/utilities/constants.dart';
-import 'package:pgc/model/histories.dart';
-import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:pgc/widgets/profilebarwithdepartmentnoalarm.dart';
 
 class SuccessFinishJob extends StatefulWidget {
-  const SuccessFinishJob({Key key}) : super(key: key);
+  const SuccessFinishJob({Key? key}) : super(key: key);
 
   @override
   _SuccessFinishJobState createState() => _SuccessFinishJobState();
 }
 
 class _SuccessFinishJobState extends State<SuccessFinishJob> {
-  DateTime current;
-  String docNo;
+  DateTime current = DateTime.now();
+  String docNo = '';
 
   var notiCounts = "0";
-  Future<bool> popped() {
+  Future<bool> popped() async {
     _goMainMenu(context);
+    return false;
+
     /*  FToast fToast = FToast();
     fToast.init(context);
 
@@ -58,9 +53,9 @@ class _SuccessFinishJobState extends State<SuccessFinishJob> {
     // TODO: implement initState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        docNo = ModalRoute.of(context).settings.arguments == null
+        docNo = ModalRoute.of(context)!.settings.arguments == null
             ? ''
-            : ModalRoute.of(context).settings.arguments;
+            : ModalRoute.of(context)!.settings.arguments as String;
       });
       _getNotiCounts();
       /*    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
@@ -80,11 +75,14 @@ class _SuccessFinishJobState extends State<SuccessFinishJob> {
 
   void _getNotiCounts() async {
     final storage = new FlutterSecureStorage();
-    String notiCountsStorage = await storage.read(key: 'notiCounts');
+    String? notiCountsStorage = await storage.read(key: 'notiCounts');
     print("NOTIC FROM " + notiCounts);
-    setState(() {
-      notiCounts = notiCountsStorage;
-    });
+
+    if (notiCountsStorage != null) {
+      setState(() {
+        notiCounts = notiCountsStorage;
+      });
+    }
   }
 
   @override

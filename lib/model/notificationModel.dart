@@ -12,8 +12,8 @@ String notificationModelToJson(NotificationModel data) =>
 
 class NotificationModel {
   NotificationModel({
-    this.title,
-    this.body,
+    required this.title,
+    required this.body,
   });
 
   String title;

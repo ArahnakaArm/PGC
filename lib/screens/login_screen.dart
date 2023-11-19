@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:pgc/responseModel/auth.dart';
 import 'package:pgc/responseModel/permissionList.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/postHttp.dart';
@@ -16,7 +14,6 @@ import 'package:pgc/widgets/background.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:rounded_loading_button/rounded_loading_button.dart';
 import 'package:http/http.dart' as http;
-
 
 class LogInScreen extends StatefulWidget {
   @override
@@ -191,9 +188,6 @@ class _LogInScreenState extends State<LogInScreen> {
   }
 
   void _validate(username, pass, ctx) async {
- 
-
-
     FocusScope.of(context).unfocus();
     bool emailValid = RegExp(
             r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
@@ -328,7 +322,7 @@ class _LogInScreenState extends State<LogInScreen> {
     }
   }
 
-  Future<bool> popped(text, ctx) {
+  Future<void> popped(text, ctx) async {
     FToast fToast = FToast();
     fToast.init(ctx);
 

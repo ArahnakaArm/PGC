@@ -1,12 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
-
-import 'package:connectivity/connectivity.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart';
 import 'package:pgc/responseModel/busRef.dart';
 import 'package:pgc/responseModel/buslistinfo.dart';
 import 'package:pgc/responseModel/routeInfo.dart';
@@ -14,19 +10,14 @@ import 'package:pgc/screens/processwork.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/postHttpWithToken.dart';
 import 'package:pgc/services/http/putHttpWithToken.dart';
-import 'package:pgc/services/utils/currentLocation.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/widgets/commonloading.dart';
 import 'package:pgc/widgets/dialogbox/confirmWorkDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
 import 'package:pgc/widgets/nointernetbackground.dart';
 import 'package:pgc/widgets/notfoundbackground.dart';
-import 'package:pgc/widgets/profilebar.dart';
-import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:pgc/utilities/constants.dart';
-import 'package:pgc/model/histories.dart';
 import 'package:pgc/widgets/profilebarwithdepartmentnoalarm.dart';
-import 'package:pgc/widgets/tabbutton.dart';
 import 'package:pgc/services/utils/common.dart';
 
 class WorkList extends StatefulWidget {
@@ -35,11 +26,10 @@ class WorkList extends StatefulWidget {
 }
 
 class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
-  int _selectedPage = 0;
-  PageController _pageController;
-  BusRef busRef;
+  PageController? _pageController;
+  BusRef? busRef;
   List<ResultDatum> busCurrentList = [];
-  BusListInfo busListRes;
+  BusListInfo? busListRes;
   List<ResultDatum> busList = [];
   List<ResultDatum> busListThreeDays = [];
   List<ResultDatum> busListSum = [];
@@ -51,15 +41,6 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
   int lastIndexToday = 0;
 
   bool isConnent = true;
-  /* var notiCounts = "0"; */
-  void _changePage(int pageNum) {
-    setState(() {
-      _selectedPage = pageNum;
-      _pageController.animateToPage(pageNum,
-          duration: Duration(milliseconds: 500),
-          curve: Curves.fastLinearToSlowEaseIn);
-    });
-  }
 
   @override
   void initState() {
@@ -84,7 +65,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _pageController.dispose();
+    _pageController?.dispose();
     super.dispose();
   }
 
@@ -124,8 +105,8 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
 
   Future<void> _getBusInfoList() async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     var busStatus = "CONFIRMED";
     var notCarSys = "CAR_SYS";
     DateTime nowLocal = new DateTime.now();
@@ -420,8 +401,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                             children: <Widget>[
                                                               Expanded(
                                                                   child: Row(
-                                                                children: <
-                                                                    Widget>[
+                                                                children: <Widget>[
                                                                   Image.asset(
                                                                     'assets/images/clipboard.png',
                                                                     height: 20,
@@ -453,7 +433,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                               Container(
                                                                   width: 90,
                                                                   padding: const EdgeInsets
-                                                                          .only(
+                                                                      .only(
                                                                       left: 3,
                                                                       right: 3,
                                                                       top: 0,
@@ -504,8 +484,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                                   .start,
                                                           children: <Widget>[
                                                             Row(
-                                                              children: <
-                                                                  Widget>[
+                                                              children: <Widget>[
                                                                 Text("◉",
                                                                     style:
                                                                         TextStyle(
@@ -575,8 +554,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                               ],
                                                             ),
                                                             Row(
-                                                              children: <
-                                                                  Widget>[
+                                                              children: <Widget>[
                                                                 Text('◉',
                                                                     style:
                                                                         TextStyle(
@@ -615,8 +593,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                               ],
                                                             ),
                                                             Row(
-                                                              children: <
-                                                                  Widget>[
+                                                              children: <Widget>[
                                                                 Text(
                                                                   '◉',
                                                                   maxLines: 1,
@@ -667,8 +644,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                               ],
                                                             ),
                                                             Row(
-                                                              children: <
-                                                                  Widget>[
+                                                              children: <Widget>[
                                                                 Text(
                                                                   '◉',
                                                                   maxLines: 1,
@@ -788,8 +764,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                             children: <Widget>[
                                                               Expanded(
                                                                   child: Row(
-                                                                children: <
-                                                                    Widget>[
+                                                                children: <Widget>[
                                                                   Image.asset(
                                                                     'assets/images/clipboard.png',
                                                                     height: 20,
@@ -821,7 +796,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                               Container(
                                                                   width: 90,
                                                                   padding: const EdgeInsets
-                                                                          .only(
+                                                                      .only(
                                                                       left: 3,
                                                                       right: 3,
                                                                       top: 0,
@@ -872,8 +847,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                                   .start,
                                                           children: <Widget>[
                                                             Row(
-                                                              children: <
-                                                                  Widget>[
+                                                              children: <Widget>[
                                                                 Text("◉",
                                                                     style:
                                                                         TextStyle(
@@ -943,8 +917,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                               ],
                                                             ),
                                                             Row(
-                                                              children: <
-                                                                  Widget>[
+                                                              children: <Widget>[
                                                                 Text('◉',
                                                                     style:
                                                                         TextStyle(
@@ -983,8 +956,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                               ],
                                                             ),
                                                             Row(
-                                                              children: <
-                                                                  Widget>[
+                                                              children: <Widget>[
                                                                 Text(
                                                                   '◉',
                                                                   maxLines: 1,
@@ -1035,8 +1007,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                               ],
                                                             ),
                                                             Row(
-                                                              children: <
-                                                                  Widget>[
+                                                              children: <Widget>[
                                                                 Text(
                                                                   '◉',
                                                                   maxLines: 1,
@@ -1164,7 +1135,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
                                                             width: 90,
                                                             padding:
                                                                 const EdgeInsets
-                                                                        .only(
+                                                                    .only(
                                                                     left: 3,
                                                                     right: 3,
                                                                     top: 0,
@@ -1473,13 +1444,17 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) {
-            return WillPopScope(onWillPop: () {}, child: LoadingDialogBox());
+            return WillPopScope(
+                onWillPop: () {
+                  return Future.value(false);
+                },
+                child: LoadingDialogBox());
           },
         );
 
         final storage = new FlutterSecureStorage();
-        String token = await storage.read(key: 'token');
-        String userId = await storage.read(key: 'userId');
+        String? token = await storage.read(key: 'token');
+        String? userId = await storage.read(key: 'userId');
         var orderBy = "completed_at:desc";
         var limit = 1;
         var queryString =
@@ -1530,8 +1505,8 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
 
   Future<void> _getCurrentWork() async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     var busStatus = "INPROGRESS";
     var queryString = '?bus_reserve_status_id=${busStatus}&driver_id=${userId}';
     var getBusInfoListUrl = Uri.parse(
@@ -1573,8 +1548,8 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
 
   Future<int> _checkInProgressWorkCounts() async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     var busStatus = "INPROGRESS";
     var queryString = '?bus_reserve_status_id=${busStatus}&driver_id=${userId}';
     var getBusInfoListUrl = Uri.parse(
@@ -1623,12 +1598,16 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return WillPopScope(onWillPop: () {}, child: LoadingDialogBox());
+        return WillPopScope(
+            onWillPop: () {
+              return Future.value(false);
+            },
+            child: LoadingDialogBox());
       },
     );
 
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
+    String? token = await storage.read(key: 'token');
     var queryString = '?bus_job_info_id=${busJobId}';
 
     var busRefUrl = Uri.parse(
@@ -1639,27 +1618,27 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
 
       busRef = busRefFromJson(busRefRes);
 
-      String busReserveInfoId = busRef.resultData[0].busReserveInfoId;
+      String busReserveInfoId = busRef!.resultData[0].busReserveInfoId;
 
       var updateBusJobObj = {
-        "doc_no": busRef.resultData[0].busJobInfoInfo.docNo,
+        "doc_no": busRef!.resultData[0].busJobInfoInfo.docNo,
         "car_mileage_start": int.parse(mile),
         "car_mileage_end":
-            busRef.resultData[0].busJobInfoInfo.carMileageEnd == null
+            busRef!.resultData[0].busJobInfoInfo.carMileageEnd == null
                 ? 0
-                : busRef.resultData[0].busJobInfoInfo.carMileageEnd,
+                : busRef!.resultData[0].busJobInfoInfo.carMileageEnd,
         "destination_image_path":
-            busRef.resultData[0].busJobInfoInfo.destinationImagePath == null
+            busRef!.resultData[0].busJobInfoInfo.destinationImagePath == null
                 ? ''
-                : busRef.resultData[0].busJobInfoInfo.destinationImagePath,
-        "route_info_id": busRef.resultData[0].busJobInfoInfo.routeInfoId,
+                : busRef!.resultData[0].busJobInfoInfo.destinationImagePath,
+        "route_info_id": busRef!.resultData[0].busJobInfoInfo.routeInfoId,
         "trip_datetime":
-            busRef.resultData[0].busJobInfoInfo.tripDatetime.toString(),
-        "driver_id": busRef.resultData[0].busJobInfoInfo.driverId,
-        "car_info_id": busRef.resultData[0].busJobInfoInfo.carInfoId,
-        "number_of_seat": busRef.resultData[0].busJobInfoInfo.numberOfSeat,
+            busRef!.resultData[0].busJobInfoInfo.tripDatetime.toString(),
+        "driver_id": busRef!.resultData[0].busJobInfoInfo.driverId,
+        "car_info_id": busRef!.resultData[0].busJobInfoInfo.carInfoId,
+        "number_of_seat": busRef!.resultData[0].busJobInfoInfo.numberOfSeat,
         "number_of_reserved":
-            busRef.resultData[0].busJobInfoInfo.numberOfReserved,
+            busRef!.resultData[0].busJobInfoInfo.numberOfReserved,
         "bus_reserve_status_id": "INPROGRESS"
       };
 
@@ -1675,24 +1654,24 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
       var updateJobInfo =
           await putHttpWithToken(updateJobUrl, token, updateBusJobObj);
 
-      for (int i = 0; i < busRef.resultData.length; i++) {
+      for (int i = 0; i < busRef!.resultData.length; i++) {
         var updateReserveJobUrl = Uri.parse(
-            '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_RESERVE_INFO']}/${busRef.resultData[i].busReserveInfoId}');
+            '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_RESERVE_INFO']}/${busRef!.resultData[i].busReserveInfoId}');
         var updateBusReserveObj = {
-          "doc_no": busRef.resultData[i].busReserveInfoInfo.docNo,
-          "route_info_id": busRef.resultData[i].busReserveInfoInfo.routeInfoId,
+          "doc_no": busRef!.resultData[i].busReserveInfoInfo.docNo,
+          "route_info_id": busRef!.resultData[i].busReserveInfoInfo.routeInfoId,
           "trip_datetime":
-              busRef.resultData[i].busReserveInfoInfo.tripDatetime.toString(),
+              busRef!.resultData[i].busReserveInfoInfo.tripDatetime.toString(),
           "is_normal_time":
-              busRef.resultData[i].busReserveInfoInfo.isNormalTime,
+              busRef!.resultData[i].busReserveInfoInfo.isNormalTime,
           "emp_department_id":
-              busRef.resultData[i].busReserveInfoInfo.empDepartmentId,
+              busRef!.resultData[i].busReserveInfoInfo.empDepartmentId,
           "bus_reserve_status_id": "INPROGRESS",
-          "bus_reserve_reason_text": busRef
+          "bus_reserve_reason_text": busRef!
                       .resultData[i].busReserveInfoInfo.busReserveReasonText ==
                   null
               ? ''
-              : busRef.resultData[i].busReserveInfoInfo.busReserveReasonText,
+              : busRef!.resultData[i].busReserveInfoInfo.busReserveReasonText,
           "car_mileage": int.parse(mile),
         };
 
@@ -1705,8 +1684,8 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
       ///
       ///
       /////////// GET ROUTE POI INFO ///////////////////
-      var routeInfoId = busRef.resultData[0].busJobInfoInfo.routeInfoId;
-      var busInfoId = busRef.resultData[0].busJobInfoId;
+      var routeInfoId = busRef!.resultData[0].busJobInfoInfo.routeInfoId;
+      var busInfoId = busRef!.resultData[0].busJobInfoId;
 
       var queryString = '?route_info_id=${routeInfoId}';
       var getRoutePoiUrl = Uri.parse(
@@ -1777,7 +1756,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
         ),
       ),
     ).then((value) async {
-      await _checkInternet();
+      _checkInternet();
     });
   }
 

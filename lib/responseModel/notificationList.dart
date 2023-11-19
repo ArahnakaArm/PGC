@@ -12,10 +12,10 @@ String notificationListModelToJson(NotificationListModel data) =>
 
 class NotificationListModel {
   NotificationListModel({
-    this.resultCode,
-    this.developerMessage,
-    this.resultData,
-    this.rowCount,
+    required this.resultCode,
+    required this.developerMessage,
+    required this.resultData,
+    required this.rowCount,
   });
 
   String resultCode;
@@ -42,13 +42,13 @@ class NotificationListModel {
 
 class ResultNotificationList {
   ResultNotificationList({
-    this.notificationId,
-    this.receiverId,
-    this.isRead,
-    this.notiText,
-    this.notiDetail,
-    this.createdAt,
-    this.updatedAt,
+    required this.notificationId,
+    required this.receiverId,
+    required this.isRead,
+    required this.notiText,
+    required this.notiDetail,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
   });
 

@@ -12,9 +12,9 @@ String routeInfoByPathToJson(RouteInfoByPath data) =>
 
 class RouteInfoByPath {
   RouteInfoByPath({
-    this.resultCode,
-    this.developerMessage,
-    this.resultData,
+    required this.resultCode,
+    required this.developerMessage,
+    required this.resultData,
   });
 
   String resultCode;
@@ -37,24 +37,24 @@ class RouteInfoByPath {
 
 class ResultData {
   ResultData({
-    this.routeInfoId,
-    this.routeCode,
-    this.originRouteNameTh,
-    this.originRouteNameEn,
-    this.originRouteNameMm,
-    this.originRouteNameKh,
-    this.destinationRouteNameTh,
-    this.destinationRouteNameEn,
-    this.destinationRouteNameMm,
-    this.destinationRouteNameKh,
-    this.tripType,
-    this.status,
-    this.createdBy,
-    this.createdAt,
-    this.updatedAt,
+    required this.routeInfoId,
+    required this.routeCode,
+    required this.originRouteNameTh,
+    required this.originRouteNameEn,
+    required this.originRouteNameMm,
+    required this.originRouteNameKh,
+    required this.destinationRouteNameTh,
+    required this.destinationRouteNameEn,
+    required this.destinationRouteNameMm,
+    required this.destinationRouteNameKh,
+    required this.tripType,
+    required this.status,
+    required this.createdBy,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
-    this.createdByInfo,
-    this.routePoiInfo,
+    required this.createdByInfo,
+    required this.routePoiInfo,
   });
 
   String routeInfoId;
@@ -123,26 +123,26 @@ class ResultData {
 
 class CreatedByInfo {
   CreatedByInfo({
-    this.lastLogin,
-    this.userId,
-    this.imageProfileFile,
+    required this.lastLogin,
+    required this.userId,
+    required this.imageProfileFile,
     this.driverPriority,
     this.signatureFile,
     this.token,
-    this.email,
-    this.password,
-    this.firstnameTh,
-    this.lastnameTh,
+    required this.email,
+    required this.password,
+    required this.firstnameTh,
+    required this.lastnameTh,
     this.firstnameEn,
     this.lastnameEn,
-    this.mobileNo,
+    required this.mobileNo,
     this.dateOfBirth,
-    this.userRoleId,
-    this.userStateId,
-    this.pdpaFlagDatetime,
-    this.pdpaFlag,
-    this.createdAt,
-    this.updatedAt,
+    required this.userRoleId,
+    required this.userStateId,
+    required this.pdpaFlagDatetime,
+    required this.pdpaFlag,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
   });
 
@@ -219,22 +219,22 @@ class CreatedByInfo {
 
 class RoutePoiInfo {
   RoutePoiInfo(
-      {this.routePoiInfoId,
-      this.routeInfoId,
-      this.locationNameTh,
-      this.locationNameEn,
-      this.locationNameMm,
-      this.locationNameKh,
-      this.latitude,
-      this.longitude,
-      this.order,
-      this.createdAt,
-      this.updatedAt,
+      {required this.routePoiInfoId,
+      required this.routeInfoId,
+      required this.locationNameTh,
+      required this.locationNameEn,
+      required this.locationNameMm,
+      required this.locationNameKh,
+      required this.latitude,
+      required this.longitude,
+      required this.order,
+      required this.createdAt,
+      required this.updatedAt,
       this.deletedAt,
-      this.status,
-      this.checkInTime,
-      this.passengerCount,
-      this.passengerCountUsed});
+      required this.status,
+      required this.checkInTime,
+      required this.passengerCount,
+      required this.passengerCountUsed});
 
   String routePoiInfoId;
   String routeInfoId;
@@ -266,6 +266,10 @@ class RoutePoiInfo {
         createdAt: DateTime.parse(json["created_at"]),
         updatedAt: DateTime.parse(json["updated_at"]),
         deletedAt: json["deleted_at"],
+        status: json["status"],
+        checkInTime: json["check_in_time"],
+        passengerCountUsed: json["passenger_count_used"],
+        passengerCount: json["passenger_count"],
       );
 
   Map<String, dynamic> toJson() => {

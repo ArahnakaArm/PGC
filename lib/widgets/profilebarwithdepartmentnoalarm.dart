@@ -11,7 +11,7 @@ import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/patchHttpWithToken.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:badges/badges.dart';
-import 'package:connectivity/connectivity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as httpp;
 
 class ProfileBarWithDepartmentNoAlarm extends StatefulWidget {
@@ -19,13 +19,13 @@ class ProfileBarWithDepartmentNoAlarm extends StatefulWidget {
   _ProfileBarWithDepartmentNoAlarmState createState() =>
       _ProfileBarWithDepartmentNoAlarmState();
 
-  String notifinationCount;
+  String? notifinationCount;
 }
 
 class _ProfileBarWithDepartmentNoAlarmState
     extends State<ProfileBarWithDepartmentNoAlarm> with WidgetsBindingObserver {
-  User user;
-  String baseProfileUrl;
+  User? user;
+  String? baseProfileUrl;
   bool haveImage = false;
   var firstName;
   var lastName;
@@ -65,12 +65,13 @@ class _ProfileBarWithDepartmentNoAlarmState
                       backgroundImage: isConnect
                           ? haveImage
                               ? NetworkImage(profileUrl ?? "")
+                                  as ImageProvider<Object> // Explicit cast
                               : AssetImage(
                                   'assets/images/user.png',
-                                )
+                                ) // Explicit cast
                           : AssetImage(
                               'assets/images/user.png',
-                            ),
+                            ), // Explicit cast
                     )),
                 SizedBox(width: 15),
                 Expanded(
@@ -186,14 +187,14 @@ class _ProfileBarWithDepartmentNoAlarmState
 
   void _pickImage(src) async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
+    String? token = await storage.read(key: 'token');
 
     try {
-      final XFile photo = await _picker.pickImage(source: src);
+      final XFile? photo = await _picker.pickImage(source: src);
       if (photo == null) {
         return;
       }
-      Map<String, String> headers = {HttpHeaders.authorizationHeader: token};
+      Map<String, String> headers = {HttpHeaders.authorizationHeader: token!};
       Uri uri = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['POST_IMAGE_USER']}');
       httpp.MultipartRequest request = httpp.MultipartRequest('POST', uri);
@@ -250,7 +251,7 @@ class _ProfileBarWithDepartmentNoAlarmState
     }); */
 
     /* final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
+    String? token = await storage.read(key: 'token');
     var getUserByMeUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
 

@@ -1,28 +1,17 @@
 import 'dart:convert';
-import 'dart:io';
-
-import 'package:connectivity/connectivity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart';
-import 'package:pgc/responseModel/buslistinfo.dart';
 import 'package:pgc/responseModel/notificationList.dart';
-import 'package:pgc/screens/processwork.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/putHttpWithToken.dart';
-import 'package:pgc/services/utils/currentLocation.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:pgc/widgets/commonloading.dart';
-import 'package:pgc/widgets/dialogbox/confirmWorkDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
 import 'package:pgc/widgets/nointernetbackground.dart';
 import 'package:pgc/widgets/notfoundbackground.dart';
-import 'package:pgc/widgets/profilebar.dart';
-import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:pgc/utilities/constants.dart';
-import 'package:pgc/model/histories.dart';
-import 'package:pgc/widgets/tabbutton.dart';
 import 'package:pgc/services/utils/common.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -39,17 +28,14 @@ class _NotificationScreenState extends State<NotificationScreen>
   List<ResultNotificationList> notificationList = [];
   List<ResultNotificationList> notificationListUnread = [];
   var notificationCounts = "0";
-  void _changePage(int pageNum) {
-    setState(() {});
-  }
 
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        notificationCounts = ModalRoute.of(context).settings.arguments == null
+        notificationCounts = ModalRoute.of(context)!.settings.arguments == null
             ? "0"
-            : ModalRoute.of(context).settings.arguments;
+            : ModalRoute.of(context)?.settings.arguments as String;
         print(notificationCounts);
       });
 
@@ -93,8 +79,8 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   Future<void> _getNotificationList() async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
 
     var queryString = '?receiver_id=${userId}&offset=0&limit=10';
     var getNotificationListUrl = Uri.parse(
@@ -140,7 +126,11 @@ class _NotificationScreenState extends State<NotificationScreen>
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return WillPopScope(onWillPop: () {}, child: LoadingDialogBox());
+        return WillPopScope(
+            onWillPop: () {
+              return Future.value(false);
+            },
+            child: LoadingDialogBox());
       },
     );
     await _getNotificationListUnreadAndUpdate();
@@ -150,8 +140,8 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   Future<void> _getNotificationListUnreadAndUpdate() async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
 
     var queryString = '?receiver_id=${userId}&offset=0&limit=10&is_read=false';
     var getNotificationListUrl = Uri.parse(
@@ -381,8 +371,8 @@ class _NotificationScreenState extends State<NotificationScreen>
   Future<void> _updateNoti(index, ResultNotificationList data) async {
     if (data.isRead == "false") {
       final storage = new FlutterSecureStorage();
-      String token = await storage.read(key: 'token');
-      String userId = await storage.read(key: 'userId');
+      String? token = await storage.read(key: 'token');
+      String? userId = await storage.read(key: 'userId');
       try {
         var updateNotificationObj = {
           "receiver_id": data.receiverId,

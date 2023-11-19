@@ -12,10 +12,7 @@ import 'package:pgc/screens/history.dart';
 import 'package:pgc/screens/processwork.dart';
 import 'package:pgc/screens/setting_screen.dart';
 import 'package:pgc/screens/splash_screen.dart';
-import 'package:pgc/screens/unity/message.dart';
-import 'package:pgc/screens/unity/message_list.dart';
-import 'package:pgc/screens/unity/permissions.dart';
-import 'package:pgc/screens/unity/token_monitor.dart';
+
 import 'package:pgc/screens/worklist.dart';
 import 'package:pgc/screens/checkin.dart';
 import 'package:pgc/screens/scanandlist.dart';
@@ -75,10 +72,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 /// Create a [AndroidNotificationChannel] for heads up notifications
-AndroidNotificationChannel channel;
+AndroidNotificationChannel? channel;
 
 /// Initialize the [FlutterLocalNotificationsPlugin] package.
-FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+FlutterLocalNotificationsPlugin? flutterLocalNotificationsPlugin;
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -101,9 +98,9 @@ Future main() async {
     /// We use this channel in the `AndroidManifest.xml` file to override the
     /// default FCM channel to enable heads up notifications.
     await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
+        ?.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+        ?.createNotificationChannel(channel!);
 
     /// Update the iOS foreground notification presentation options to allow
     /// heads up notifications.
@@ -129,7 +126,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       builder: (context, child) {
         return MediaQuery(
-          child: child,
+          child: child!,
           data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
         );
       },
@@ -144,128 +141,5 @@ class MyApp extends StatelessWidget {
         '/message': (context) => MessageView(),
       },
     ); */
-  }
-}
-
-/// Renders the example application.
-class Application extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() => _Application();
-}
-
-class _Application extends State<Application> {
-  String _token;
-
-  @override
-  void initState() {
-    super.initState();
-    FirebaseMessaging.instance
-        .getInitialMessage()
-        .then((RemoteMessage message) {
-      if (message != null) {
-        Navigator.pushNamed(context, '/message',
-            arguments: MessageArguments(message, true));
-      }
-    });
-
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      RemoteNotification notification = message.notification;
-      AndroidNotification android = message.notification?.android;
-      if (notification != null && android != null && !kIsWebs) {
-        flutterLocalNotificationsPlugin.show(
-            notification.hashCode,
-            notification.title,
-            notification.body,
-            NotificationDetails(
-              android: AndroidNotificationDetails(
-                channel.id,
-                channel.name,
-                channel.description,
-                // TODO add a proper drawable resource to android, for now using
-                //      one that already exists in example app.
-                icon: 'launch_background',
-              ),
-            ));
-      }
-    });
-
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('A new onMessageOpenedApp event was published!');
-      Navigator.pushNamed(context, '/message',
-          arguments: MessageArguments(message, true));
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cloud Messaging'),
-        actions: <Widget>[
-          PopupMenuButton(
-            itemBuilder: (BuildContext context) {
-              return [
-                const PopupMenuItem(
-                  value: 'subscribe',
-                  child: Text('Subscribe to topic'),
-                ),
-                const PopupMenuItem(
-                  value: 'unsubscribe',
-                  child: Text('Unsubscribe to topic'),
-                ),
-                const PopupMenuItem(
-                  value: 'get_apns_token',
-                  child: Text('Get APNs token (Apple only)'),
-                ),
-              ];
-            },
-          ),
-        ],
-      ),
-      floatingActionButton: Builder(
-        builder: (context) => FloatingActionButton(
-          backgroundColor: Colors.white,
-          child: const Icon(Icons.send),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(children: [
-          MetaCard('Permissions', Permissions()),
-          MetaCard('FCM Token', TokenMonitor((token) {
-            _token = token;
-            return token == null
-                ? const CircularProgressIndicator()
-                : Text(token, style: const TextStyle(fontSize: 12));
-          })),
-          MetaCard('Message Stream', MessageList()),
-        ]),
-      ),
-    );
-  }
-}
-
-/// UI Widget for displaying metadata.
-class MetaCard extends StatelessWidget {
-  final String _title;
-  final Widget _children;
-
-  // ignore: public_member_api_docs
-  MetaCard(this._title, this._children);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(left: 8, right: 8, top: 8),
-        child: Card(
-            child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(children: [
-                  Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child:
-                          Text(_title, style: const TextStyle(fontSize: 18))),
-                  _children,
-                ]))));
   }
 }

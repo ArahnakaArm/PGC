@@ -1,6 +1,8 @@
+// ignore_for_file: await_only_futures
+
 import 'dart:convert';
 import 'dart:io';
-import 'package:connectivity/connectivity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -37,20 +39,20 @@ class MainMenuScreen extends StatefulWidget {
 
 class _MainMenuScreenState extends State<MainMenuScreen>
     with WidgetsBindingObserver {
-  AndroidNotificationChannel channel;
-  IO.Socket socket;
+  AndroidNotificationChannel? channel;
+  IO.Socket? socket;
   List<ResultDatum> busList = [];
 
   /// Initialize the [FlutterLocalNotificationsPlugin] package.
   ///
-  FlutterLocalNotificationsPlugin localNotification;
-  String _tokenNoti;
-  Stream<String> _tokenStream;
-  DateTime current;
-  User user;
+  FlutterLocalNotificationsPlugin? localNotification;
+  String? _tokenNoti = '';
+  Stream<String>? _tokenStream;
+  DateTime? current;
+  User? user;
   String callAdminNumber = "";
-  BusListInfo busListInfo;
-  List<DeviceTokenArray> deviceTokenArr;
+  BusListInfo? busListInfo;
+  List<DeviceTokenArray>? deviceTokenArr;
   var workCounts;
   get http => null;
 
@@ -59,7 +61,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   /////////////// Profilebar //////////////////
   bool isConnect = true;
-  String baseProfileUrl;
+  String? baseProfileUrl;
   bool haveImage = false;
   var firstName;
   var lastName;
@@ -72,7 +74,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     fToast.init(context);
 
     DateTime now = DateTime.now();
-    if (current == null || now.difference(current) > Duration(seconds: 2)) {
+    if (current == null || now.difference(current!) > Duration(seconds: 2)) {
       current = now;
       /*     Fluttertoast.showToast(
           msg: "กดย้อนกลับอีกครั้งเพื่อปิด", toastLength: Toast.LENGTH_SHORT); */
@@ -94,18 +96,14 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     }
   }
 
-  Future<AudioPlayer> playLocalAsset() async {
-    AudioCache cache = new AudioCache();
-    //At the next line, DO NOT pass the entire reference such as assets/yes.mp3. This will not work.
-    //Just pass the file name only.
-    return await cache.play("success.wav");
+  Future<void> playLocalAsset() async {
+    final player = AudioPlayer();
+    await player.play(AssetSource('success.wav'));
   }
 
-  Future<AudioPlayer> playLocalAssetFail() async {
-    AudioCache cache = new AudioCache();
-    //At the next line, DO NOT pass the entire reference such as assets/yes.mp3. This will not work.
-    //Just pass the file name only.
-    return await cache.play("fail.wav");
+  Future<void> playLocalAssetFail() async {
+    final player = AudioPlayer();
+    await player.play(AssetSource('fail.wav'));
   }
 
   Future _showNotification(data) async {
@@ -117,7 +115,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     var generalNotificationDetails =
         new NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    await localNotification.show(
+    await localNotification?.show(
         0, data['title'], data['body'], generalNotificationDetails);
   }
 
@@ -147,7 +145,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
     localNotification = new FlutterLocalNotificationsPlugin();
 
-    localNotification.initialize(initialzationSettings);
+    localNotification?.initialize(initialzationSettings);
     // TODO: implement initState
 
     /*    if (isConnect) {
@@ -156,7 +154,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
  */
     FirebaseMessaging.instance
         .getInitialMessage()
-        .then((RemoteMessage message) {
+        .then((RemoteMessage? message) {
       if (message != null) {
         print('A new onMessageOpenedApp event was published!2');
       }
@@ -182,7 +180,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     /*   _getProfile(); */
   }
 
-  void setToken(String token) async {
+  Future<void> setToken(String token) async {
     print('FCM Token: $token');
     setState(() {
       _tokenNoti = token;
@@ -190,7 +188,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
     if (await Permission.notification.request().isGranted) {
       _sendNotiToken(_tokenNoti);
-      print('GRANT PERMISSION : ' + _tokenNoti);
+      print('GRANT PERMISSION : ' + _tokenNoti!);
     } else {}
   }
 
@@ -238,7 +236,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   Future<void> _getProfile() async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
+    String? token = await storage.read(key: 'token');
     var getUserByMeUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
 
@@ -249,14 +247,15 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     );
 
     setState(() {
-      user = userFromJson(res) ?? '';
-      storage.write(key: 'profileUrl', value: user.resultData.imageProfileFile);
-      storage.write(key: 'firstName', value: user.resultData.firstnameTh);
-      storage.write(key: 'lastName', value: user.resultData.lastnameTh);
+      user = userFromJson(res);
+      storage.write(
+          key: 'profileUrl', value: user?.resultData.imageProfileFile);
+      storage.write(key: 'firstName', value: user?.resultData.firstnameTh);
+      storage.write(key: 'lastName', value: user?.resultData.lastnameTh);
       storage.write(
           key: 'department',
           value:
-              user.resultData.empInfo.empDepartmentInfo.empDepartmentNameTh ??
+              user?.resultData.empInfo.empDepartmentInfo.empDepartmentNameTh ??
                   "");
     });
   }
@@ -361,8 +360,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   Future<void> _getWorkCounts() async {
     print("?WORK COUNT WORK");
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     DateTime nowLocal = new DateTime.now();
     DateTime now = new DateTime.now()
         .subtract(Duration(hours: 7))
@@ -408,7 +407,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     });
   }
 
-  void _goNotificationList(context) {
+  _goNotificationList(context) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -418,7 +417,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
         ),
       ),
     ).then((value) async {
-      await _checkInternet();
+      _checkInternet();
     });
   }
 
@@ -430,7 +429,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       context,
       MaterialPageRoute(builder: (context) => WorkList()),
     ).then((value) async {
-      await _checkInternet();
+      _checkInternet();
     });
   }
 
@@ -457,9 +456,13 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
       callAdminNumber = await _getAdminNumber();
 
-      FirebaseMessaging.instance.getToken().then(setToken);
+      FirebaseMessaging.instance.getToken().then(
+        (token) {
+          setToken(token!);
+        },
+      );
       _tokenStream = FirebaseMessaging.instance.onTokenRefresh;
-      _tokenStream.listen(setToken);
+      _tokenStream?.listen(setToken);
 
       await _getWorkCounts();
     }
@@ -468,8 +471,8 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   Future<String> _getAdminNumber() async {
     try {
       final storage = new FlutterSecureStorage();
-      String token = await storage.read(key: 'token');
-      String userId = await storage.read(key: 'userId');
+      String? token = await storage.read(key: 'token');
+      String? userId = await storage.read(key: 'userId');
 
       var getAdminNumberUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['GET_APP_ADMIN_NUMBER']}');
@@ -482,14 +485,16 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       adminNumberFomated = adminNumberFomated['resultData']['value'];
 
       return adminNumberFomated;
-    } catch (e) {}
+    } catch (e) {
+      return '';
+    }
   }
 
   Future<void> _sendNotiToken(notiToken) async {
     try {
       final storage = new FlutterSecureStorage();
-      String token = await storage.read(key: 'token');
-      String userId = await storage.read(key: 'userId');
+      String? token = await storage.read(key: 'token');
+      String? userId = await storage.read(key: 'userId');
       var queryString = "?user_id=${userId}";
       var getDeviceTokenUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['GET_ALL_DEVICE_TOKEN']}${queryString}');
@@ -503,7 +508,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       });
 
       var contain =
-          deviceTokenArr.where((element) => element.deviceToken == notiToken);
+          deviceTokenArr!.where((element) => element.deviceToken == notiToken);
       if (contain.isEmpty) {
         var tokenDeviceBody = {"user_id": userId, "device_token": notiToken};
         var postDeviceTokenUrl = Uri.parse(
@@ -523,7 +528,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       context,
       MaterialPageRoute(builder: (context) => History()),
     ).then((value) async {
-      await _checkInternet();
+      _checkInternet();
     });
   }
 
@@ -545,12 +550,10 @@ class _MainMenuScreenState extends State<MainMenuScreen>
                     backgroundImage: isConnect
                         ? haveImage
                             ? NetworkImage(profileUrl ?? "")
+                                as ImageProvider<Object> // Explicit cast
                             : AssetImage(
-                                'assets/images/user.png',
-                              )
-                        : AssetImage(
-                            'assets/images/user.png',
-                          ),
+                                'assets/images/user.png') // Explicit cast
+                        : AssetImage('assets/images/user.png'), // Explicit cast
                   ),
                 ),
                 SizedBox(width: 15),
@@ -655,7 +658,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
         ]);
   }
 
-  void _getProfileStorage() async {
+  Future<void> _getProfileStorage() async {
     final storage = new FlutterSecureStorage();
     var firstNameTh = await storage.read(key: 'firstName');
     var lastNameTh = await storage.read(key: 'lastName');
@@ -763,15 +766,15 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   void _pickImage(src) async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
+    String? token = await storage.read(key: 'token');
 
     try {
-      final XFile photo =
+      final XFile? photo =
           await _picker.pickImage(source: src, maxWidth: 700, maxHeight: 1200);
       if (photo == null) {
         return;
       }
-      Map<String, String> headers = {HttpHeaders.authorizationHeader: token};
+      Map<String, String> headers = {HttpHeaders.authorizationHeader: token!};
       Uri uri = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['POST_IMAGE_USER']}');
       httpp.MultipartRequest request = httpp.MultipartRequest('POST', uri);

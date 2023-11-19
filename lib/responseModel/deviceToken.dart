@@ -12,10 +12,10 @@ String deviceTokenModelToJson(DeviceTokenModel data) =>
 
 class DeviceTokenModel {
   DeviceTokenModel({
-    this.resultCode,
-    this.developerMessage,
-    this.resultData,
-    this.rowCount,
+    required this.resultCode,
+    required this.developerMessage,
+    required this.resultData,
+    required this.rowCount,
   });
 
   String resultCode;
@@ -42,11 +42,11 @@ class DeviceTokenModel {
 
 class DeviceTokenArray {
   DeviceTokenArray({
-    this.rowId,
-    this.userId,
-    this.deviceToken,
-    this.createdAt,
-    this.updatedAt,
+    required this.rowId,
+    required this.userId,
+    required this.deviceToken,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
   });
 

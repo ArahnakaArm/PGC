@@ -5,7 +5,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pgc/responseModel/user.dart';
 import 'package:pgc/screens/login_screen.dart';
 import 'package:pgc/screens/mainmenu_screen.dart';
-import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/widgets/background.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -20,7 +19,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with WidgetsBindingObserver {
-  User user;
+  User? user;
   String version = "";
   @override
   void initState() {
@@ -129,8 +128,8 @@ class _SplashScreenState extends State<SplashScreen>
       });
 
       final storage = new FlutterSecureStorage();
-      String userId = await storage.read(key: 'userId');
-      String token = await storage.read(key: 'token');
+      String? userId = await storage.read(key: 'userId');
+      String? token = await storage.read(key: 'token');
 
       if (userId == null || token == null) {
         _goLogin();
@@ -163,7 +162,7 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _getProfile() async {
     try {
       final storage = new FlutterSecureStorage();
-      String token = await storage.read(key: 'token');
+      String? token = await storage.read(key: 'token');
 
       var getUserByMeUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
@@ -176,20 +175,21 @@ class _SplashScreenState extends State<SplashScreen>
       var checkRes = jsonDecode(res)['resultCode'];
 
       if (checkRes == '20000') {
-        user = userFromJson(res) ?? '';
+        user = userFromJson(res);
 
-        await storage.write(key: 'userId', value: user.resultData.userId ?? "");
         await storage.write(
-            key: 'profileUrl', value: user.resultData.imageProfileFile ?? "");
+            key: 'userId', value: user!.resultData.userId ?? "");
         await storage.write(
-            key: 'firstName', value: user.resultData.firstnameTh ?? "");
+            key: 'profileUrl', value: user!.resultData.imageProfileFile ?? "");
         await storage.write(
-            key: 'lastName', value: user.resultData.lastnameTh ?? "");
+            key: 'firstName', value: user!.resultData.firstnameTh ?? "");
+        await storage.write(
+            key: 'lastName', value: user!.resultData.lastnameTh ?? "");
         await storage.write(
             key: 'department',
-            value:
-                user.resultData.empInfo.empDepartmentInfo.empDepartmentNameTh ??
-                    "");
+            value: user!
+                    .resultData.empInfo.empDepartmentInfo.empDepartmentNameTh ??
+                "");
 
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (context) => MainMenuScreen()));

@@ -3,20 +3,18 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
-import 'package:connectivity/connectivity.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pgc/model/passData.dart';
 import 'package:pgc/responseModel/passengerList.dart';
-import 'package:pgc/screens/confirmfinishjob.dart';
+
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/putHttpWithToken.dart';
 import 'package:pgc/services/utils/common.dart';
 import 'package:pgc/widgets/background.dart';
-import 'package:pgc/widgets/backpressincontainer.dart';
 
 import 'package:pgc/widgets/dialogbox/errorEmployeeInfoDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/errorScanDialogBox.dart';
@@ -36,12 +34,12 @@ class ScanAndList extends StatefulWidget {
 }
 
 class _ScanAndListState extends State<ScanAndList> {
-  Barcode result;
-  QRViewController controller;
+  Barcode? result;
+  QRViewController? controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   int _selectedPage = 0;
-  PageController _pageController;
-  PassDataModel passedData;
+  PageController? _pageController;
+  PassDataModel? passedData;
   List<PassengerModel> passengers = [
     PassengerModel('นาย A', 'เข็นรถ', '12.00 น.'),
     PassengerModel('นาย B', 'ทำครัว', '10.00 น.'),
@@ -61,7 +59,7 @@ class _ScanAndListState extends State<ScanAndList> {
   void _changePage(int pageNum) {
     setState(() {
       _selectedPage = pageNum;
-      _pageController.animateToPage(pageNum,
+      _pageController?.animateToPage(pageNum,
           duration: Duration(milliseconds: 500),
           curve: Curves.fastLinearToSlowEaseIn);
     });
@@ -71,9 +69,9 @@ class _ScanAndListState extends State<ScanAndList> {
   void reassemble() {
     super.reassemble();
     if (Platform.isAndroid) {
-      controller.pauseCamera();
+      controller?.pauseCamera();
     }
-    controller.resumeCamera();
+    controller?.resumeCamera();
   }
 
   @override
@@ -98,16 +96,16 @@ class _ScanAndListState extends State<ScanAndList> {
     }); */
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        passedData = ModalRoute.of(context).settings.arguments == null
+        passedData = ModalRoute.of(context)?.settings.arguments == null
             ? PassDataModel('', '', '', 0, 0)
-            : ModalRoute.of(context).settings.arguments as PassDataModel;
+            : ModalRoute.of(context)?.settings.arguments as PassDataModel;
 
-        locationName = passedData.locationName;
-        poiInfoStatus = passedData.status;
-        passengerMaxCount = passedData.passengerCount;
+        locationName = passedData!.locationName;
+        poiInfoStatus = passedData!.status;
+        passengerMaxCount = passedData!.passengerCount;
       });
 
-      _checkInternet(passedData.busJobPoiId);
+      _checkInternet(passedData!.busJobPoiId);
       /*  _getBusJobPoiInfo(passedData.busJobPoiId); */
     });
 
@@ -123,18 +121,20 @@ class _ScanAndListState extends State<ScanAndList> {
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _pageController?.dispose();
     controller?.dispose();
     super.dispose();
   }
 
   void _getNotiCounts() async {
     final storage = new FlutterSecureStorage();
-    String notiCountsStorage = await storage.read(key: 'notiCounts');
+    String? notiCountsStorage = await storage.read(key: 'notiCounts');
     print("NOTIC FROM " + notiCounts);
-    setState(() {
-      notiCounts = notiCountsStorage;
-    });
+    if (notiCountsStorage != null) {
+      setState(() {
+        notiCounts = notiCountsStorage;
+      });
+    }
   }
 
   Future<bool> _onWillPop() async {
@@ -152,6 +152,8 @@ class _ScanAndListState extends State<ScanAndList> {
     } else {
       Navigator.pop(context);
     }
+
+    return true;
   }
 
   @override
@@ -258,8 +260,8 @@ class _ScanAndListState extends State<ScanAndList> {
 
   Future<void> _getBusJobPoiInfo(busJobPoiId) async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
 
     var getBusPoiUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_POI']}/${busJobPoiId}');
@@ -283,8 +285,8 @@ class _ScanAndListState extends State<ScanAndList> {
 
   Future<void> _getUsedPassenger(routePoiId) async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     var status = "USED";
     var queryString =
         '?route_poi_info_id=${routePoiId}&passenger_status_id=${status}&bus_job_info_id=${busJobInfoId}';
@@ -346,8 +348,8 @@ class _ScanAndListState extends State<ScanAndList> {
 
   Future<void> _getUsedPassengerInit(routePoiId) async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     var status = "USED";
     var queryString =
         '?route_poi_info_id=${routePoiId}&passenger_status_id=${status}&bus_job_info_id=${busJobInfoId}';
@@ -372,18 +374,14 @@ class _ScanAndListState extends State<ScanAndList> {
     print("data ID and Type " + busJobInfoId);
   }
 
-  Future<AudioPlayer> playLocalAsset() async {
-    AudioCache cache = new AudioCache();
-    //At the next line, DO NOT pass the entire reference such as assets/yes.mp3. This will not work.
-    //Just pass the file name only.
-    return await cache.play("success.wav");
+  Future<void> playLocalAsset() async {
+    final player = AudioPlayer();
+    await player.play(AssetSource('success.wav'));
   }
 
-  Future<AudioPlayer> playLocalAssetFail() async {
-    AudioCache cache = new AudioCache();
-    //At the next line, DO NOT pass the entire reference such as assets/yes.mp3. This will not work.
-    //Just pass the file name only.
-    return await cache.play("fail.wav");
+  Future<void> playLocalAssetFail() async {
+    final player = AudioPlayer();
+    await player.play(AssetSource('fail.wav'));
   }
 
   Widget _buildQrView(BuildContext context) {
@@ -418,7 +416,7 @@ class _ScanAndListState extends State<ScanAndList> {
 
         controller?.pauseCamera();
 
-        await _putEmployee(result.code);
+        await _putEmployee(result?.code);
 
         /*   _showDialog(context, result.code); */
       });
@@ -448,20 +446,24 @@ class _ScanAndListState extends State<ScanAndList> {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return WillPopScope(onWillPop: () {}, child: LoadingDialogBox());
+          return WillPopScope(
+              onWillPop: () {
+                return Future.value(false);
+              },
+              child: LoadingDialogBox());
         },
       );
 
       final storage = new FlutterSecureStorage();
-      String token = await storage.read(key: 'token');
-      String userId = await storage.read(key: 'userId');
+      String? token = await storage.read(key: 'token');
+      String? userId = await storage.read(key: 'userId');
 
       var envUsedPassenger = "";
       var updateUsedPassenger;
 
       ///////////////////////// TICKET //////////////////////////
       if (dataType == "TICKET") {
-        envUsedPassenger = dotenv.env['PUT_USED_PASSENGER']
+        envUsedPassenger = dotenv.env['PUT_USED_PASSENGER']!
             .replaceFirst('bus_job_info_id', busJobInfoId);
         envUsedPassenger =
             envUsedPassenger.replaceFirst('passenger_id', dataId);
@@ -494,7 +496,7 @@ class _ScanAndListState extends State<ScanAndList> {
               return ErrorScanDialogBox('QR Code นี้แสกนแล้ว');
             },
           ).then((val) {
-            if (val) {
+            if (val != null) {
               controller?.resumeCamera();
             }
             controller?.resumeCamera();
@@ -513,7 +515,7 @@ class _ScanAndListState extends State<ScanAndList> {
               return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
             },
           ).then((val) {
-            if (val) {
+            if (val != null) {
               controller?.resumeCamera();
             }
             controller?.resumeCamera();
@@ -532,7 +534,7 @@ class _ScanAndListState extends State<ScanAndList> {
               return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
             },
           ).then((val) {
-            if (val) {
+            if (val != null) {
               controller?.resumeCamera();
             }
             controller?.resumeCamera();
@@ -551,7 +553,7 @@ class _ScanAndListState extends State<ScanAndList> {
               return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
             },
           ).then((val) {
-            if (val) {
+            if (val != null) {
               controller?.resumeCamera();
             }
             controller?.resumeCamera();
@@ -574,10 +576,10 @@ class _ScanAndListState extends State<ScanAndList> {
         /////////// VERIFY ////////////
 
         var envUserVerify = dotenv.env['VERIFY_USER']
-            .replaceFirst('bus_job_info_id', busJobInfoId);
+            ?.replaceFirst('bus_job_info_id', busJobInfoId);
 
-        envUserVerify = envUserVerify.replaceFirst('user_id', dataId);
-        var userVerify = Uri.parse(envUserVerify);
+        envUserVerify = envUserVerify?.replaceFirst('user_id', dataId);
+        var userVerify = Uri.parse(envUserVerify!);
 
         var userVerifyUrl = Uri.parse('${dotenv.env['BASE_API']}${userVerify}');
 
@@ -631,7 +633,7 @@ class _ScanAndListState extends State<ScanAndList> {
           ).then((value) async {
             controller?.resumeCamera();
             print("SOCKEHH" + value.toString());
-            if (value) {
+            if (value != null) {
               showDialog(
                 context: context,
                 barrierDismissible: false,
@@ -641,7 +643,7 @@ class _ScanAndListState extends State<ScanAndList> {
               );
 
               print("TEST USER : USER WORK");
-              envUsedPassenger = dotenv.env['PUT_USED_USER']
+              envUsedPassenger = dotenv.env['PUT_USED_USER']!
                   .replaceFirst('bus_job_info_id', busJobInfoId);
               envUsedPassenger =
                   envUsedPassenger.replaceFirst('user_id', dataId);
@@ -679,7 +681,7 @@ class _ScanAndListState extends State<ScanAndList> {
                     return ErrorScanDialogBox(textErr);
                   },
                 ).then((val) {
-                  if (val) {
+                  if (val != null) {
                     controller?.resumeCamera();
                   }
                   controller?.resumeCamera();
@@ -698,7 +700,7 @@ class _ScanAndListState extends State<ScanAndList> {
                     return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
                   },
                 ).then((val) {
-                  if (val) {
+                  if (val != null) {
                     controller?.resumeCamera();
                   }
                   controller?.resumeCamera();
@@ -717,7 +719,7 @@ class _ScanAndListState extends State<ScanAndList> {
                     return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
                   },
                 ).then((val) {
-                  if (val) {
+                  if (val != null) {
                     controller?.resumeCamera();
                   }
                   controller?.resumeCamera();
@@ -758,7 +760,7 @@ class _ScanAndListState extends State<ScanAndList> {
               return ErrorScanDialogBox(textErr);
             },
           ).then((val) {
-            if (val) {
+            if (val != null) {
               controller?.resumeCamera();
             }
             controller?.resumeCamera();
@@ -777,7 +779,7 @@ class _ScanAndListState extends State<ScanAndList> {
               return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
             },
           ).then((val) {
-            if (val) {
+            if (val != null) {
               controller?.resumeCamera();
             }
             controller?.resumeCamera();
@@ -795,7 +797,7 @@ class _ScanAndListState extends State<ScanAndList> {
               return ErrorScanDialogBox('ไม่พบข้อมูลผู้โดยสาร');
             },
           ).then((val) {
-            if (val) {
+            if (val != null) {
               controller?.resumeCamera();
             }
             controller?.resumeCamera();
@@ -813,7 +815,7 @@ class _ScanAndListState extends State<ScanAndList> {
               return ErrorScanDialogBox('เกิดข้อผิดพลาด');
             },
           ).then((val) {
-            if (val) {
+            if (val != null) {
               controller?.resumeCamera();
             }
             controller?.resumeCamera();
@@ -821,7 +823,6 @@ class _ScanAndListState extends State<ScanAndList> {
         }
 
         ///////////////////////////////
-
       } else {
         Navigator.pop(context);
         await playLocalAssetFail();
@@ -835,7 +836,7 @@ class _ScanAndListState extends State<ScanAndList> {
             return ErrorScanDialogBox('รูปแบบ QR Code ไม่ถูกต้อง');
           },
         ).then((val) {
-          if (val) {
+          if (val != null) {
             controller?.resumeCamera();
           }
           controller?.resumeCamera();
@@ -843,7 +844,6 @@ class _ScanAndListState extends State<ScanAndList> {
       }
 
       ///////////////////////////////////////////////////////////
-
     } else {
       await playLocalAssetFail();
       showGeneralDialog(
@@ -856,7 +856,7 @@ class _ScanAndListState extends State<ScanAndList> {
           return ErrorScanDialogBox('รูปแบบ QR Code ไม่ถูกต้อง');
         },
       ).then((val) {
-        if (val) {
+        if (val != null) {
           controller?.resumeCamera();
         }
         controller?.resumeCamera();
@@ -1186,14 +1186,18 @@ class _ScanAndListState extends State<ScanAndList> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return WillPopScope(onWillPop: () {}, child: LoadingDialogBox());
+        return WillPopScope(
+            onWillPop: () {
+              return Future.value(false);
+            },
+            child: LoadingDialogBox());
       },
     );
 
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
-    var busJopPoiId = passedData.busJobPoiId;
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
+    var busJopPoiId = passedData?.busJobPoiId;
 
     var updatebusPoiUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['PUT_BUS_JOB_POI']}/${busJopPoiId}');
@@ -1204,28 +1208,12 @@ class _ScanAndListState extends State<ScanAndList> {
       "checkin_datetime": unFormatCheckIntime.toString(),
       "status": "FINISHED"
     };
-    var putPoiResObj =
-        await putHttpWithToken(updatebusPoiUrl, token, updateBusPoiObj);
+
+    await putHttpWithToken(updatebusPoiUrl, token, updateBusPoiObj);
 
     Navigator.pop(context);
   }
 
-  Future<bool> _backPress() async {
-    if (poiInfoStatus == 'IDLE') {
-      Navigator.pop(context);
-    } else if (poiInfoStatus == 'non-success') {
-      Navigator.pop(context);
-    } else if (poiInfoStatus == "ManualCheckin") {
-      Navigator.pop(context);
-      Navigator.pop(context);
-      /* Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ConfirmFinishJob()),
-      ); */
-    } else {
-      Navigator.pop(context);
-    }
-  }
 /* 
   GestureDetector _backButton(context) {
     return GestureDetector(
@@ -1339,57 +1327,4 @@ class _ScanAndListState extends State<ScanAndList> {
                       );
                     }))));
   }
-
-  void _showDialogSuccess(context) async {
-    bool shouldUpdate = await showGeneralDialog(
-      barrierLabel: "Barrier",
-      barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.5),
-      transitionDuration: Duration(milliseconds: 250),
-      context: context,
-      pageBuilder: (_, __, ___) {
-        return SuccessEmployeeInfoDialogBox('ผู้โดยสารขึ้นครบถ้วนแล้ว');
-      },
-    );
-
-    print(shouldUpdate);
-  }
-}
-
-void _showDialogError(context) async {
-  bool shouldUpdate = await showGeneralDialog(
-    barrierLabel: "Barrier",
-    barrierDismissible: true,
-    barrierColor: Colors.black.withOpacity(0.5),
-    transitionDuration: Duration(milliseconds: 250),
-    context: context,
-    pageBuilder: (_, __, ___) {
-      return ErrorEmployeeInfoDialogBox('ไม่พบข้อมูลผู้โดยสารในเที่ยวนี้');
-    },
-  );
-
-  print(shouldUpdate);
-}
-
-void _showDialogSaved(context) async {
-  bool shouldUpdate = await showGeneralDialog(
-    barrierLabel: "Barrier",
-    barrierDismissible: true,
-    barrierColor: Colors.black.withOpacity(0.5),
-    transitionDuration: Duration(milliseconds: 250),
-    context: context,
-    pageBuilder: (_, __, ___) {
-      return SavedEmployeeInfoDialogBox('ระบบบันทึกข้อมูลแล้ว');
-    },
-  );
-
-  print(shouldUpdate);
-}
-
-void _onConfirm(context) {
-  print('Confirm');
-}
-
-void _onCancel(context) {
-  print('Cancel');
 }

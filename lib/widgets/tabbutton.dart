@@ -9,17 +9,17 @@ class TabButton extends StatelessWidget {
   final String numText;
   final double fontSize;
   TabButton(
-      {this.text,
-      this.selectedPage,
-      this.pageNumber,
-      this.onPressed,
-      this.haveNumText,
-      this.numText,
-      this.fontSize});
+      {required this.text,
+      required this.selectedPage,
+      required this.pageNumber,
+      required this.onPressed,
+      required this.haveNumText,
+      required this.numText,
+      required this.fontSize});
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onPressed,
+      onTap: onPressed(),
       child: Container(
         height: 40,
         padding: EdgeInsets.symmetric(vertical: 0.0, horizontal: 25.0),

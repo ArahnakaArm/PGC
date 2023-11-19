@@ -12,9 +12,9 @@ String verifyUserModelToJson(VerifyUserModel data) =>
 
 class VerifyUserModel {
   VerifyUserModel({
-    this.resultCode,
-    this.developerMessage,
-    this.resultData,
+    required this.resultCode,
+    required this.developerMessage,
+    required this.resultData,
   });
 
   String resultCode;
@@ -38,27 +38,27 @@ class VerifyUserModel {
 class VerifyUserResultData {
   VerifyUserResultData({
     this.lastLogin,
-    this.userId,
-    this.imageProfileFile,
+    required this.userId,
+    required this.imageProfileFile,
     this.driverPriority,
-    this.signatureFile,
-    this.token,
-    this.email,
-    this.password,
-    this.firstnameTh,
-    this.lastnameTh,
-    this.firstnameEn,
-    this.lastnameEn,
-    this.mobileNo,
-    this.dateOfBirth,
-    this.userRoleId,
-    this.userStateId,
+    required this.signatureFile,
+    required this.token,
+    required this.email,
+    required this.password,
+    required this.firstnameTh,
+    required this.lastnameTh,
+    required this.firstnameEn,
+    required this.lastnameEn,
+    required this.mobileNo,
+    required this.dateOfBirth,
+    required this.userRoleId,
+    required this.userStateId,
     this.pdpaFlagDatetime,
     this.pdpaFlag,
-    this.createdAt,
-    this.updatedAt,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
-    this.empInfo,
+    required this.empInfo,
   });
 
   dynamic lastLogin;
@@ -139,15 +139,15 @@ class VerifyUserResultData {
 
 class VerifyUserEmpInfo {
   VerifyUserEmpInfo({
-    this.empId,
-    this.empCode,
-    this.userId,
-    this.empPositionId,
-    this.empDepartmentId,
-    this.createdAt,
-    this.updatedAt,
+    required this.empId,
+    required this.empCode,
+    required this.userId,
+    required this.empPositionId,
+    required this.empDepartmentId,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
-    this.empDepartmentInfo,
+    required this.empDepartmentInfo,
   });
 
   String empId;
@@ -189,15 +189,15 @@ class VerifyUserEmpInfo {
 
 class VerifyUserEmpDepartmentInfo {
   VerifyUserEmpDepartmentInfo({
-    this.empDepartmentId,
-    this.address,
-    this.departmentCode,
-    this.empDepartmentNameTh,
-    this.empDepartmentNameEn,
-    this.managerId,
-    this.adminId,
-    this.createdAt,
-    this.updatedAt,
+    required this.empDepartmentId,
+    required this.address,
+    required this.departmentCode,
+    required this.empDepartmentNameTh,
+    required this.empDepartmentNameEn,
+    required this.managerId,
+    required this.adminId,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
   });
 

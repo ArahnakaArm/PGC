@@ -1,21 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:connectivity/connectivity.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:pgc/model/passData.dart';
 import 'package:pgc/model/passDataFinishJob.dart';
-import 'package:pgc/model/process.dart';
 import 'package:pgc/responseModel/busJobInfo.dart';
-import 'package:pgc/responseModel/busPoi.dart';
 import 'package:pgc/responseModel/busRef.dart';
 import 'package:pgc/services/http/postHttpWithToken.dart';
 import 'package:pgc/responseModel/routeInfo.dart';
-import 'package:pgc/screens/checkin.dart';
 import 'package:pgc/screens/confirmfinishjob.dart';
 import 'package:pgc/screens/scanandlist.dart';
 import 'package:pgc/screens/scanandlistoutbound.dart';
@@ -23,32 +18,24 @@ import 'package:pgc/screens/skip_screen.dart';
 import 'package:pgc/services/http/getHttpWithToken.dart';
 import 'package:pgc/services/http/putHttpWithToken.dart';
 import 'package:pgc/services/utils/common.dart';
-import 'package:pgc/services/utils/currentLocation.dart';
 import 'package:pgc/widgets/background.dart';
-
 import 'package:pgc/widgets/commonloadingsmall.dart';
-import 'package:pgc/widgets/dialogbox/confirmCheckinDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/confirmSkipDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/errorEmployeeInfoDialogBox.dart';
-import 'package:pgc/widgets/dialogbox/errorScanDialogBox.dart';
 import 'package:pgc/widgets/dialogbox/loadingDialogBox.dart';
-import 'package:pgc/widgets/notfoundbackground.dart';
-import 'package:pgc/widgets/profilebarwithdepartment.dart';
 import 'package:pgc/utilities/constants.dart';
-import 'package:pgc/model/histories.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:pgc/widgets/profilebarwithdepartmentnoalarm.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class ProcessWork extends StatefulWidget {
-  const ProcessWork({Key key}) : super(key: key);
+  const ProcessWork({Key? key}) : super(key: key);
 
   @override
   _ProcessWorkState createState() => _ProcessWorkState();
 }
 
 class _ProcessWorkState extends State<ProcessWork> {
-  IO.Socket socket;
+  IO.Socket? socket;
   static const String _kLocationServicesDisabledMessage =
       'Location services are disabled.';
   static const String _kPermissionDeniedMessage = 'Permission denied.';
@@ -58,10 +45,10 @@ class _ProcessWorkState extends State<ProcessWork> {
 
   final GeolocatorPlatform _geolocatorPlatform = GeolocatorPlatform.instance;
 
-  StreamSubscription<Position> _positionStreamSubscription;
-  StreamSubscription<ServiceStatus> _serviceStatusStreamSubscription;
+  StreamSubscription<Position>? _positionStreamSubscription;
+  StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
   String busJobInfoId = '';
-  BusRef busRef;
+  BusRef? busRef;
   String routeId = '';
   List<RoutePoiInfo> routePoi = [];
   var isLoading = true;
@@ -90,7 +77,7 @@ class _ProcessWorkState extends State<ProcessWork> {
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        busJobInfoId = ModalRoute.of(context).settings.arguments;
+        busJobInfoId = ModalRoute.of(context)!.settings.arguments as String;
       });
       print(busJobInfoId);
     });
@@ -113,7 +100,7 @@ class _ProcessWorkState extends State<ProcessWork> {
   @override
   void dispose() {
     if (_positionStreamSubscription != null) {
-      _positionStreamSubscription.cancel();
+      _positionStreamSubscription?.cancel();
       _positionStreamSubscription = null;
     }
 
@@ -179,8 +166,8 @@ class _ProcessWorkState extends State<ProcessWork> {
       });
     }
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
 
     var getBusJobInfoUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO']}/${busJobInfoId}');
@@ -534,7 +521,7 @@ class _ProcessWorkState extends State<ProcessWork> {
     }
   }
 
-  void _toggleListening() async {
+  Future<void> _toggleListening() async {
     bool isAuthSocket = false;
     socket = IO.io("${dotenv.env['PCG_SOCKET']}", <String, dynamic>{
       "transports": ["websocket"],
@@ -543,10 +530,10 @@ class _ProcessWorkState extends State<ProcessWork> {
 
     if (_positionStreamSubscription == null) {
       final storage = new FlutterSecureStorage();
-      String token = await storage.read(key: 'token');
-      String userId = await storage.read(key: 'userId');
+      String? token = await storage.read(key: 'token');
+      String? userId = await storage.read(key: 'userId');
       int socketInterval =
-          int.parse(dotenv.env['SOCKET_INTERVAL_MINUTE']) * 1000 * 60;
+          int.parse(dotenv.env['SOCKET_INTERVAL_MINUTE']!) * 1000 * 60;
       final positionStream =
           _geolocatorPlatform.getPositionStream(timeInterval: socketInterval);
       _positionStreamSubscription = positionStream.handleError((error) {
@@ -558,18 +545,18 @@ class _ProcessWorkState extends State<ProcessWork> {
         DateTime now = new DateTime.now();
         String isoDate = now.toIso8601String() + 'Z';
         //////////// FOR TEST GEO POST  ////////////
-        socket.connect();
+        socket?.connect();
 
         /*   busJobInfoId = "05a915ad-d8a6-4ad4-acf8-e72bc9a12b25"; */
         if (!isAuthSocket) {
-          socket.emit("auth", {"token": token});
-          socket.onConnect((data) {
-            socket.on("auth_success", (msg) {
+          socket?.emit("auth", {"token": token});
+          socket?.onConnect((data) {
+            socket?.on("auth_success", (msg) {
               authResSocket = msg['code'];
               print("SOCKET: " + authResSocket.toString());
               isAuthSocket = true;
 
-              socket.emit("gps/pub", {
+              socket?.emit("gps/pub", {
                 "id": busJobInfoId,
                 "data": {
                   "lng": position.longitude.toString(),
@@ -578,7 +565,7 @@ class _ProcessWorkState extends State<ProcessWork> {
                 }
               });
 
-              socket.on("bus-job-info-id/${busJobInfoId}/gps-sub", (msgs) {
+              socket?.on("bus-job-info-id/${busJobInfoId}/gps-sub", (msgs) {
                 print("SOCKET: " + msgs.toString());
                 print("SOCKET ID: " + busJobInfoId);
               });
@@ -587,7 +574,7 @@ class _ProcessWorkState extends State<ProcessWork> {
         }
         if (isAuthSocket) {
           print("SOCKET: " + "WROK " + busJobInfoId);
-          socket.emit("gps/pub", {
+          socket?.emit("gps/pub", {
             "id": busJobInfoId,
             "data": {
               "lng": position.longitude.toString(),
@@ -596,13 +583,13 @@ class _ProcessWorkState extends State<ProcessWork> {
             }
           });
 
-          socket.on("bus-job-info-id/${busJobInfoId}/gps-sub", (msgs) {
+          socket?.on("bus-job-info-id/${busJobInfoId}/gps-sub", (msgs) {
             print("SOCKET: " + msgs.toString());
           });
         }
 
-        socket.onError((data) => print(data));
-        socket.onConnectError((data) => print(data));
+        socket?.onError((data) => print(data));
+        socket?.onConnectError((data) => print(data));
 
         /*  socket = IO.io("http://192.168.1.118:5000", <String, dynamic>{
           "transports": ["websocket"],
@@ -620,8 +607,8 @@ class _ProcessWorkState extends State<ProcessWork> {
         socket.onError((data) => print(data)); */
 
         /*        final storage = new FlutterSecureStorage();
-        String token = await storage.read(key: 'token');
-        String userId = await storage.read(key: 'userId');
+        String? token = await storage.read(key: 'token');
+        String? userId = await storage.read(key: 'userId');
 
         var busStatus = "CONFIRMED";
         var queryString = '?bus_reserve_status_id=${busStatus}';
@@ -641,11 +628,11 @@ class _ProcessWorkState extends State<ProcessWork> {
       }
 
       String statusDisplayValue;
-      if (_positionStreamSubscription.isPaused) {
-        _positionStreamSubscription.resume();
+      if (_positionStreamSubscription!.isPaused) {
+        _positionStreamSubscription?.resume();
         statusDisplayValue = 'resumed';
       } else {
-        _positionStreamSubscription.pause();
+        _positionStreamSubscription?.pause();
         statusDisplayValue = 'paused';
       }
     });
@@ -967,8 +954,8 @@ class _ProcessWorkState extends State<ProcessWork> {
  */
   Future<void> _getMaxRadius() async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
 
     var getMaxRadiusUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_APP_CONFIG_RADIUS']}');
@@ -998,12 +985,12 @@ class _ProcessWorkState extends State<ProcessWork> {
       var busJobPoiId = await _getJobPoi(content);
 
       if (_positionStreamSubscription != null) {
-        _positionStreamSubscription.cancel();
+        _positionStreamSubscription?.cancel();
         _positionStreamSubscription = null;
       }
 
       try {
-        socket.close();
+        socket?.close();
       } catch (e) {}
       //pop dialog
       setState(() {
@@ -1026,7 +1013,11 @@ class _ProcessWorkState extends State<ProcessWork> {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return WillPopScope(onWillPop: () {}, child: LoadingDialogBox());
+          return WillPopScope(
+              onWillPop: () {
+                return Future.value(false);
+              },
+              child: LoadingDialogBox());
         },
       );
       try {
@@ -1102,7 +1093,9 @@ class _ProcessWorkState extends State<ProcessWork> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => SkipScreen(),
+                  builder: (context) => SkipScreen(
+                    value: '',
+                  ),
                   settings: RouteSettings(
                     arguments: PassDataModel(
                         busJobPoiId,
@@ -1212,12 +1205,12 @@ class _ProcessWorkState extends State<ProcessWork> {
   }
 
   Future<String> _updateJobPoiStatus(RoutePoiInfo content, String status,
-      [String skipReason]) async {
+      [String? skipReason]) async {
     print("CHECK IN222 : " + status);
     ///////// GET BUSJOBPOI ID //////////
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     var routePoiId = content.routePoiInfoId;
     var queryString =
         '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${currentRouteInfoId}';
@@ -1247,7 +1240,7 @@ class _ProcessWorkState extends State<ProcessWork> {
       "checkin_datetime": isoDate,
       "status": statusToUpdate
     };
-    if (statusToUpdate == "SKIP") {
+    if (statusToUpdate == "SKIP" && skipReason != null) {
       updateBusPoiObj["skip_reason"] = skipReason;
     }
 
@@ -1264,8 +1257,8 @@ class _ProcessWorkState extends State<ProcessWork> {
   Future<String> _getJobPoi(RoutePoiInfo content) async {
     ///////// GET BUSJOBPOI ID //////////
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
-    String userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
     var routePoiId = content.routePoiInfoId;
     var queryString =
         '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${currentRouteInfoId}';
@@ -1789,7 +1782,7 @@ class _ProcessWorkState extends State<ProcessWork> {
 
   Future<void> _retryPostBusPoi() async {
     final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
+    String? token = await storage.read(key: 'token');
     var postBusJobPoiUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['POST_BUS_JOB_POI']}/${busJobInfoId}/${routeId}');
     DateTime now = new DateTime.now();

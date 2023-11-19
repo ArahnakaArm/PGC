@@ -10,10 +10,10 @@ String busRefToJson(BusRef data) => json.encode(data.toJson());
 
 class BusRef {
   BusRef({
-    this.resultCode,
-    this.developerMessage,
-    this.resultData,
-    this.rowCount,
+    required this.resultCode,
+    required this.developerMessage,
+    required this.resultData,
+    required this.rowCount,
   });
 
   String resultCode;
@@ -39,11 +39,11 @@ class BusRef {
 
 class ResultDatumBusRef {
   ResultDatumBusRef({
-    this.busJobRefReserveId,
-    this.busJobInfoId,
-    this.busReserveInfoId,
-    this.busJobInfoInfo,
-    this.busReserveInfoInfo,
+    required this.busJobRefReserveId,
+    required this.busJobInfoId,
+    required this.busReserveInfoId,
+    required this.busJobInfoInfo,
+    required this.busReserveInfoInfo,
   });
 
   String busJobRefReserveId;
@@ -73,20 +73,20 @@ class ResultDatumBusRef {
 
 class BusJobInfoInfo {
   BusJobInfoInfo({
-    this.busJobInfoId,
-    this.docNo,
-    this.carMileageStart,
-    this.carMileageEnd,
+    required this.busJobInfoId,
+    required this.docNo,
+    required this.carMileageStart,
+    required this.carMileageEnd,
     this.destinationImagePath,
-    this.routeInfoId,
-    this.tripDatetime,
-    this.driverId,
-    this.carInfoId,
+    required this.routeInfoId,
+    required this.tripDatetime,
+    required this.driverId,
+    required this.carInfoId,
     this.numberOfSeat,
     this.numberOfReserved,
-    this.busReserveStatusId,
-    this.createdAt,
-    this.updatedAt,
+    required this.busReserveStatusId,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
   });
 
@@ -145,24 +145,24 @@ class BusJobInfoInfo {
 
 class BusReserveInfoInfo {
   BusReserveInfoInfo({
-    this.busReserveInfoId,
+    required this.busReserveInfoId,
     this.carReserveInfoId,
     this.allocatedBy,
-    this.docNo,
-    this.routeInfoId,
-    this.tripDatetime,
-    this.isNormalTime,
-    this.empDepartmentId,
-    this.busReserveStatusId,
-    this.reserveReason,
+    required this.docNo,
+    required this.routeInfoId,
+    required this.tripDatetime,
+    required this.isNormalTime,
+    required this.empDepartmentId,
+    required this.busReserveStatusId,
+    required this.reserveReason,
     this.busReserveReasonCancelId,
     this.busReserveReasonText,
     this.canceledBy,
     this.canceledAt,
-    this.createdBy,
+    required this.createdBy,
     this.expiredAt,
-    this.createdAt,
-    this.updatedAt,
+    required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
   });
 
@@ -181,7 +181,7 @@ class BusReserveInfoInfo {
   dynamic canceledBy;
   dynamic canceledAt;
   String createdBy;
-  DateTime expiredAt;
+  DateTime? expiredAt;
   DateTime createdAt;
   DateTime updatedAt;
   dynamic deletedAt;
@@ -203,7 +203,7 @@ class BusReserveInfoInfo {
         canceledBy: json["canceled_by"],
         canceledAt: json["canceled_at"],
         createdBy: json["created_by"],
-        /*   expiredAt: DateTime.parse(json["expired_at"]), */
+        expiredAt: DateTime.parse(json["expired_at"]),
         createdAt: DateTime.parse(json["created_at"]),
         updatedAt: DateTime.parse(json["updated_at"]),
         deletedAt: json["deleted_at"],
@@ -225,7 +225,9 @@ class BusReserveInfoInfo {
         "canceled_by": canceledBy,
         "canceled_at": canceledAt,
         "created_by": createdBy,
-        "expired_at": expiredAt.toIso8601String(),
+        "expired_at": expiredAt?.toIso8601String() == null
+            ? null
+            : expiredAt?.toIso8601String(),
         "created_at": createdAt.toIso8601String(),
         "updated_at": updatedAt.toIso8601String(),
         "deleted_at": deletedAt,

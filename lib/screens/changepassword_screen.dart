@@ -13,7 +13,7 @@ import 'package:pgc/widgets/backpress.dart';
 import 'package:rounded_loading_button/rounded_loading_button.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
-  const ChangePasswordScreen({Key key}) : super(key: key);
+  const ChangePasswordScreen({Key? key}) : super(key: key);
 
   @override
   _ChangePasswordScreenState createState() => _ChangePasswordScreenState();
@@ -258,11 +258,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   Future<void> _changePassword(oldPass, newPass, confirmNewPass, ctx) async {
     final storage = new FlutterSecureStorage();
-    String userId = await storage.read(key: 'userId');
-    String token = await storage.read(key: 'token');
+    String? userId = await storage.read(key: 'userId');
+    String? token = await storage.read(key: 'token');
     try {
       var changePasswordId = ("${dotenv.env['POST_CHANGE_PASSWORD_PATH']}")
-          .replaceFirst('userid', userId);
+          .replaceFirst('userid', userId ?? '');
       var changePasswordUrl =
           Uri.parse('${dotenv.env['BASE_API']}${changePasswordId}');
       var changePassBody = {"oldPassword": oldPass, "newPassword": newPass};
@@ -312,7 +312,7 @@ GestureDetector _backButton(context) {
   );
 }
 
-Future<bool> popped(text, ctx) {
+Future<void> popped(text, ctx) async {
   FToast fToast = FToast();
   fToast.init(ctx);
 

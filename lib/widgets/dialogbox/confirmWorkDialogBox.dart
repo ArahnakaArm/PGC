@@ -1,14 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pgc/responseModel/busRef.dart';
-import 'package:pgc/responseModel/routeInfo.dart';
-import 'package:pgc/screens/processwork.dart';
-import 'package:pgc/services/http/getHttpWithToken.dart';
-import 'package:pgc/services/http/postHttpWithToken.dart';
-import 'package:pgc/services/http/putHttpWithToken.dart';
 import 'package:pgc/services/utils/common.dart';
 import 'package:pgc/utilities/constants.dart';
 
@@ -18,9 +9,9 @@ class ConfirmWorkDialogBox extends StatelessWidget {
   String beginMiles;
   DateTime tripTime;
   FocusNode miles = FocusNode();
-  BusRef busRef;
+  BusRef? busRef;
   List<ResultDatumBusRef> busCurrentList = [];
-  String reserveId;
+  String? reserveId;
   String busJobDoc;
   String endMiles;
   TextEditingController milesController = new TextEditingController();
@@ -100,7 +91,7 @@ class ConfirmWorkDialogBox extends StatelessWidget {
                                   controller: milesController
                                     ..text = this.endMiles != null
                                         ? this.endMiles
-                                        : 0,
+                                        : '0',
                                   autofocus: true,
                                   keyboardType: TextInputType.number,
                                   decoration: new InputDecoration(
@@ -201,7 +192,7 @@ class ConfirmWorkDialogBox extends StatelessWidget {
   }
 
   void _goProgess(context) async {
-    Pattern pattern = r'[0-9]$';
+    String pattern = r'[0-9]$';
     RegExp regex = new RegExp(pattern);
     if (milesController.text != "") {
       print("TEST NEW NUM " + milesController.text);
@@ -226,7 +217,7 @@ class ConfirmWorkDialogBox extends StatelessWidget {
     if (canPress) {
       canPress = false;
       final storage = new FlutterSecureStorage();
-      String token = await storage.read(key: 'token');
+      String? token = await storage.read(key: 'token');
       //////////// GET REF INFO ///////////////////
       var queryString = '?bus_job_info_id=${busJobId}';
 

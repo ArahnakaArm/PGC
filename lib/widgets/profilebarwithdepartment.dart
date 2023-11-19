@@ -5,7 +5,7 @@ import 'package:pgc/responseModel/user.dart';
 import 'package:pgc/screens/setting_screen.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:badges/badges.dart';
-import 'package:connectivity/connectivity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class ProfileBarWithDepartment extends StatefulWidget {
   @override
@@ -18,8 +18,8 @@ class ProfileBarWithDepartment extends StatefulWidget {
 
 class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
     with WidgetsBindingObserver {
-  User user;
-  String baseProfileUrl;
+  User? user;
+  String? baseProfileUrl;
   bool haveImage = false;
   var firstName;
   var lastName;
@@ -59,12 +59,13 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
                     backgroundImage: isConnect
                         ? haveImage
                             ? NetworkImage(profileUrl ?? "")
+                                as ImageProvider<Object> // Explicit cast
                             : AssetImage(
                                 'assets/images/user.png',
-                              )
+                              ) // Explicit cast
                         : AssetImage(
                             'assets/images/user.png',
-                          ),
+                          ), // Explicit cast
                   ),
                 ),
                 SizedBox(width: 15),
@@ -180,7 +181,7 @@ class _ProfileBarWithDepartmentState extends State<ProfileBarWithDepartment>
     }); */
 
     /* final storage = new FlutterSecureStorage();
-    String token = await storage.read(key: 'token');
+    String? token = await storage.read(key: 'token');
     var getUserByMeUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_USER_BY_ME_PATH']}');
 
