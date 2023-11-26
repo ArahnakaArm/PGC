@@ -418,7 +418,8 @@ class _HistoryState extends State<History> {
     String? token = await storage.read(key: 'token');
     String? userId = await storage.read(key: 'userId');
     var busStatus = "COMPLETED";
-    var queryString = '?bus_reserve_status_id=${busStatus}&driver_id=${userId}';
+    var queryString =
+        '?bus_reserve_status_id=${busStatus}&driver_id=${userId}&limit=10';
     var getBusInfoListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryString}');
     var res = await getHttpWithToken(getBusInfoListUrl, token);

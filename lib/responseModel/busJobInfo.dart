@@ -57,9 +57,9 @@ class ResultData {
 
   String busJobInfoId;
   String docNo;
-  int carMileageStart;
-  int carMileageEnd;
-  String destinationImagePath;
+  int? carMileageStart;
+  int? carMileageEnd;
+  String? destinationImagePath;
   String routeInfoId;
   DateTime tripDatetime;
   String driverId;
@@ -77,9 +77,9 @@ class ResultData {
   factory ResultData.fromJson(Map<String, dynamic> json) => ResultData(
         busJobInfoId: json["bus_job_info_id"],
         docNo: json["doc_no"],
-        carMileageStart: json["car_mileage_start"],
-        carMileageEnd: json["car_mileage_end"],
-        destinationImagePath: json["destination_image_path"],
+        carMileageStart: json["car_mileage_start"] ?? 0,
+        carMileageEnd: json["car_mileage_end"] ?? 0,
+        destinationImagePath: json["destination_image_path"] ?? "",
         routeInfoId: json["route_info_id"],
         tripDatetime: DateTime.parse(json["trip_datetime"]),
         driverId: json["driver_id"],
@@ -143,7 +143,7 @@ class CarInfo {
   String status;
   int numberOfSeat;
   int costPerMonth;
-  String imgPath;
+  String? imgPath;
   String carTypeId;
   String color;
   String brand;
@@ -161,7 +161,7 @@ class CarInfo {
         status: json["status"],
         numberOfSeat: json["number_of_seat"],
         costPerMonth: json["cost_per_month"],
-        imgPath: json["img_path"],
+        imgPath: json["img_path"] ?? "",
         carTypeId: json["car_type_id"],
         color: json["color"],
         brand: json["brand"],

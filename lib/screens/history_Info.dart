@@ -51,7 +51,7 @@ class _HistoryInfoState extends State<HistoryInfo> {
   var carPlate = '';
   var beginMiles = 0;
   var reserveNumber = 0;
-  var arriveNumber = 0;
+  int arriveNumber = 0;
   var startDate = '';
   var tripType = '';
   var tripStatus = '';
@@ -160,7 +160,7 @@ class _HistoryInfoState extends State<HistoryInfo> {
         originDestination = busJobInfo.resultData.routeInfo.originRouteNameTh;
         destination = busJobInfo.resultData.routeInfo.destinationRouteNameTh;
         carPlate = busJobInfo.resultData.carInfo.carPlate;
-        beginMiles = busJobInfo.resultData.carMileageStart;
+        beginMiles = busJobInfo.resultData.carMileageStart ?? 0;
         startDate = ChangeFormatDateToTH(
             busJobInfo.resultData.tripDatetime.add(Duration(hours: 7)));
         tripType = busJobInfo.resultData.routeInfo.tripType;
@@ -279,7 +279,7 @@ class _HistoryInfoState extends State<HistoryInfo> {
         routePoi[i].passengerCountUsed =
             (jsonDecode(resUsedPassenger)['rowCount'] as int);
 
-        arriveNumber = arriveNumber + routePoi[i].passengerCountUsed;
+        arriveNumber = arriveNumber + (routePoi[i].passengerCountUsed ?? 0);
 
         print(
             "RESPONSE WITH HTTP " + routePoi[i].passengerCountUsed.toString());
@@ -810,8 +810,12 @@ class _HistoryInfoState extends State<HistoryInfo> {
         MaterialPageRoute(
           builder: (context) => ConfirmFinishJob(),
           settings: RouteSettings(
-            arguments: PassDataFinishJobModel(busJobPoiId, status,
-                content.locationNameTh, busJobInfoId, content.passengerCount),
+            arguments: PassDataFinishJobModel(
+                busJobPoiId,
+                status,
+                content.locationNameTh,
+                busJobInfoId,
+                content.passengerCount ?? 0),
           ),
         ),
       ).then((value) async {
@@ -853,8 +857,8 @@ class _HistoryInfoState extends State<HistoryInfo> {
                       busJobPoiId,
                       status,
                       content.locationNameTh,
-                      content.passengerCount,
-                      content.passengerCountUsed),
+                      content.passengerCount ?? 0,
+                      content.passengerCountUsed ?? 0),
                 ),
               ),
             ).then((value) async {
@@ -870,8 +874,8 @@ class _HistoryInfoState extends State<HistoryInfo> {
                       busJobPoiId,
                       status,
                       content.locationNameTh,
-                      content.passengerCount,
-                      content.passengerCountUsed),
+                      content.passengerCount ?? 0,
+                      content.passengerCountUsed ?? 0),
                 ),
               ),
             ).then((value) async {
@@ -906,8 +910,8 @@ class _HistoryInfoState extends State<HistoryInfo> {
                         busJobPoiId,
                         status,
                         content.locationNameTh,
-                        content.passengerCount,
-                        content.passengerCountUsed),
+                        content.passengerCount ?? 0,
+                        content.passengerCountUsed ?? 0),
                   ),
                 ),
               ).then((value) async {
@@ -971,8 +975,8 @@ class _HistoryInfoState extends State<HistoryInfo> {
                   busJobPoiId,
                   status,
                   content.locationNameTh,
-                  content.passengerCount,
-                  content.passengerCountUsed),
+                  content.passengerCount ?? 0,
+                  content.passengerCountUsed ?? 0),
             ),
           ),
         ).then((value) async {
@@ -988,8 +992,8 @@ class _HistoryInfoState extends State<HistoryInfo> {
                   busJobPoiId,
                   status,
                   content.locationNameTh,
-                  content.passengerCount,
-                  content.passengerCountUsed),
+                  content.passengerCount ?? 0,
+                  content.passengerCountUsed ?? 0),
             ),
           ),
         ).then((value) async {

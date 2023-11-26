@@ -194,9 +194,6 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
             .map((i) => ResultDatum.fromJson(i))
             .toList();
 
-        print("PPPLOKOK " + busList.length.toString());
-        print("PPPLOKOK " + queryString.toString());
-
         lastIndexToday = busList.length == 0 ? 0 : busList.length;
 
         busListSum = [...busList, ...busListThreeDays];
@@ -1431,8 +1428,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
       );
-    } //
-    else {
+    } else {
       if (currentWorkCounts > 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('มีงานที่กำลังทำอยู่')),
@@ -1551,6 +1547,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
     String? token = await storage.read(key: 'token');
     String? userId = await storage.read(key: 'userId');
     var busStatus = "INPROGRESS";
+
     var queryString = '?bus_reserve_status_id=${busStatus}&driver_id=${userId}';
     var getBusInfoListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryString}');
@@ -1560,8 +1557,12 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
       busCurrentList = (jsonDecode(res)['resultData'] as List)
           .map((i) => ResultDatum.fromJson(i))
           .toList();
+
+      print("WDWDWDWF " + busCurrentList.toString());
       return busCurrentList.length;
     } catch (e) {
+      print("WDWDWDWF" + e.toString());
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
       );
@@ -1586,10 +1587,14 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
           isHaveCurrentWork = true;
         });
       } else {
-        setState(() {
-          isHaveCurrentWork = false;
-        });
+        if (mounted) {
+          setState(() {
+            isHaveCurrentWork = false;
+          });
+        }
       }
+
+      print('WFWF ' + isHaveCurrentWork.toString());
     }
   }
 
@@ -1705,46 +1710,12 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
 
       var array = [];
 
-      var postBusJobPoiRes =
-          await postHttpWithToken(postBusJobPoiUrl, token, array);
-
-      /*   for (int i = 0; i < routePoiInfoArr.length; i++) {
-        var objectArray = {
-          'bus_job_info_id': busInfoId,
-          'route_info_id': routeInfoId,
-          'checkin_datetime': isoDate,
-          'route_poi_info_id': routePoiInfoArr[i].routePoiInfoId,
-          'status': 'IDLE'
-        };
-        array.add(objectArray);
-      }
-
-      var postBusJobPoiRes =
-          await postHttpWithToken(postBusJobPoiUrl, token, array);
- */
-      /*   for (int i = 0; i < routePoiInfoArr.length; i++) {
-        var postBusJobPoiRes =
-            await postHttpWithToken(postBusJobPoiUrl, token, {
-          'bus_job_info_id': busInfoId,
-          'route_info_id': routeInfoId,
-          'checkin_datetime': isoDate,
-          'route_poi_info_id': routePoiInfoArr[i].routePoiInfoId,
-          'status': 'IDLE'
-        });
-      } */
-
-      /*     print(routePoiInfoArr);
-      print(busInfoId); */
-
-      /////////// END GET ROUTE POI INFO ///////////////////
-
-      /*   Navigator.of(context, rootNavigator: true).pop(true); */
+      await postHttpWithToken(postBusJobPoiUrl, token, array);
     } catch (e) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${dotenv.env['ERROR_TEXT']}')),
       );
-      /*  Navigator.of(context, rootNavigator: true).pop(false); */
     }
     Navigator.pop(context);
     Navigator.push(

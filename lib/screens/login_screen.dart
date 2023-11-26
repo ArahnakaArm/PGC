@@ -215,6 +215,9 @@ class _LogInScreenState extends State<LogInScreen> {
       var authRes =
           await postHttp(authUrl, {"email": username, "password": pass});
 
+      // var authRes = await postHttp(
+      //     authUrl, {"email": 'speed11@gmail.com', "password": '123456'});
+
       Map<String, dynamic> authResObj = jsonDecode(authRes);
 
       print("Prod Debug" + authResObj.toString());

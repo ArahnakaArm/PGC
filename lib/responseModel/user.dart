@@ -204,10 +204,10 @@ class EmpDepartmentInfo {
   });
 
   String empDepartmentId;
-  String address;
+  String? address;
   String departmentCode;
   String empDepartmentNameTh;
-  String empDepartmentNameEn;
+  String? empDepartmentNameEn;
   DateTime createdAt;
   DateTime updatedAt;
   dynamic deletedAt;
@@ -215,10 +215,10 @@ class EmpDepartmentInfo {
   factory EmpDepartmentInfo.fromJson(Map<String, dynamic> json) =>
       EmpDepartmentInfo(
         empDepartmentId: json["emp_department_id"],
-        address: json["address"],
+        address: json["address"] ?? "",
         departmentCode: json["department_code"],
         empDepartmentNameTh: json["emp_department_name_th"],
-        empDepartmentNameEn: json["emp_department_name_en"],
+        empDepartmentNameEn: json["emp_department_name_en"] ?? "",
         createdAt: DateTime.parse(json["created_at"]),
         updatedAt: DateTime.parse(json["updated_at"]),
         deletedAt: json["deleted_at"],

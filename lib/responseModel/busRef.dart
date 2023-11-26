@@ -92,8 +92,8 @@ class BusJobInfoInfo {
 
   String busJobInfoId;
   String docNo;
-  int carMileageStart;
-  int carMileageEnd;
+  int? carMileageStart;
+  int? carMileageEnd;
   dynamic destinationImagePath;
   String routeInfoId;
   DateTime tripDatetime;
@@ -109,8 +109,9 @@ class BusJobInfoInfo {
   factory BusJobInfoInfo.fromJson(Map<String, dynamic> json) => BusJobInfoInfo(
         busJobInfoId: json["bus_job_info_id"],
         docNo: json["doc_no"],
-        carMileageStart: json["car_mileage_start"],
-        carMileageEnd: json["car_mileage_end"],
+        carMileageStart:
+            json["car_mileage_start"] == null ? 0 : json["car_mileage_start"],
+        carMileageEnd: json["car_mileage_end"] ?? 0,
         destinationImagePath: json["destination_image_path"],
         routeInfoId: json["route_info_id"],
         tripDatetime: DateTime.parse(json["trip_datetime"]),

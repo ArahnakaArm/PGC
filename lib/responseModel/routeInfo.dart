@@ -248,10 +248,10 @@ class RoutePoiInfo {
   DateTime createdAt;
   DateTime updatedAt;
   dynamic deletedAt;
-  String status;
-  String checkInTime;
-  int passengerCount;
-  int passengerCountUsed;
+  String? status;
+  String? checkInTime;
+  int? passengerCount;
+  int? passengerCountUsed;
 
   factory RoutePoiInfo.fromJson(Map<String, dynamic> json) => RoutePoiInfo(
         routePoiInfoId: json["route_poi_info_id"],
@@ -266,10 +266,10 @@ class RoutePoiInfo {
         createdAt: DateTime.parse(json["created_at"]),
         updatedAt: DateTime.parse(json["updated_at"]),
         deletedAt: json["deleted_at"],
-        status: json["status"],
-        checkInTime: json["check_in_time"],
-        passengerCountUsed: json["passenger_count_used"],
-        passengerCount: json["passenger_count"],
+        status: json["status"] ?? "",
+        checkInTime: json["check_in_time"] ?? "",
+        passengerCountUsed: json["passenger_count_used"] ?? 0,
+        passengerCount: json["passenger_count"] ?? 0,
       );
 
   Map<String, dynamic> toJson() => {

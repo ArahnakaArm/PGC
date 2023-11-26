@@ -36,17 +36,10 @@ class ProcessWork extends StatefulWidget {
 
 class _ProcessWorkState extends State<ProcessWork> {
   IO.Socket? socket;
-  static const String _kLocationServicesDisabledMessage =
-      'Location services are disabled.';
-  static const String _kPermissionDeniedMessage = 'Permission denied.';
-  static const String _kPermissionDeniedForeverMessage =
-      'Permission denied forever.';
-  static const String _kPermissionGrantedMessage = 'Permission granted.';
 
   final GeolocatorPlatform _geolocatorPlatform = GeolocatorPlatform.instance;
 
   StreamSubscription<Position>? _positionStreamSubscription;
-  StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
   String busJobInfoId = '';
   BusRef? busRef;
   String routeId = '';
@@ -173,7 +166,7 @@ class _ProcessWorkState extends State<ProcessWork> {
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO']}/${busJobInfoId}');
     var arrStatus = [];
 
-    print("TOKEN :" + busJobInfoId);
+    print("NEW INFO :" + getBusJobInfoUrl.toString());
 
     try {
       var nowAStart = new DateTime.now();
@@ -193,7 +186,7 @@ class _ProcessWorkState extends State<ProcessWork> {
         originDestination = busJobInfo.resultData.routeInfo.originRouteNameTh;
         destination = busJobInfo.resultData.routeInfo.destinationRouteNameTh;
         carPlate = busJobInfo.resultData.carInfo.carPlate;
-        beginMiles = busJobInfo.resultData.carMileageStart;
+        beginMiles = busJobInfo.resultData.carMileageStart ?? 0;
         startDate = ChangeFormatDateToTH(
             busJobInfo.resultData.tripDatetime.add(Duration(hours: 7)));
         tripType = busJobInfo.resultData.routeInfo.tripType;
@@ -221,6 +214,8 @@ class _ProcessWorkState extends State<ProcessWork> {
       var getRouteInfoUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['GET_ROUTE_INFO']}/${routeId}');
 
+      print("NEW INFO :" + getRouteInfoUrl.toString());
+
       var nowBStart = new DateTime.now();
 
       var nowBStartSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
@@ -238,6 +233,14 @@ class _ProcessWorkState extends State<ProcessWork> {
               .map((i) => RoutePoiInfo.fromJson(i))
               .toList();
 
+      // print('object ' + getRouteInfoUrl.toString());
+      // print('object ' + token.toString());
+      // print('object ' + routeInfoRes.toString());
+
+      // for (var i = 0; i < routePoi.length; i++) {
+      //   print('object ' + routePoi[i].status.toString());
+      // }
+
       Comparator<RoutePoiInfo> sortByOrder =
           (a, b) => a.order.compareTo(b.order);
       routePoi.sort(sortByOrder);
@@ -252,6 +255,8 @@ class _ProcessWorkState extends State<ProcessWork> {
 
         var busPoiPassengerCountUrl = Uri.parse(
             '${dotenv.env['BASE_API']}${dotenv.env['GET_PASSENGER_COUNT']}${queryStringPassengerCount}');
+
+        print("NEW INFO 2:" + busPoiPassengerCountUrl.toString());
 
         var nowDStartSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
 
@@ -293,9 +298,11 @@ class _ProcessWorkState extends State<ProcessWork> {
           routePoi[i].passengerCountUsed = 0;
         }
 
-        arriveNumber = arriveNumber + routePoi[i].passengerCountUsed;
+        arriveNumber = arriveNumber + (routePoi[i].passengerCountUsed ?? 0);
 
         if (i < routePoi.length - 1 && routePoi[i].passengerCount != 0) {
+          print('object ' + routePoi[i].status.toString());
+
           arrStatus.add(routePoi[i].status);
         } else if (i == 0 && tripType == "outbound") {
           arrStatus.add(routePoi[i].status);
@@ -323,10 +330,16 @@ class _ProcessWorkState extends State<ProcessWork> {
 
       var busPoiUrl = Uri.parse(
           '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_POI']}${queryString}');
-      print("DFWFWFWFWW 1 " + busPoiUrl.toString());
+
+      print('object333' + busPoiUrl.toString());
+
       var nowCStartSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
 
       var busPoiResObj = await getHttpWithToken(busPoiUrl, token);
+
+      print('object2' + busPoiUrl.toString());
+
+      print('object2' + busPoiResObj.toString());
 
       var nowCEndSecond = new DateTime.now().millisecondsSinceEpoch / 1000;
       reqCSec = reqCSec + nowCEndSecond - nowCStartSecond;
@@ -338,10 +351,15 @@ class _ProcessWorkState extends State<ProcessWork> {
       var busPoiArr = busPoiRes['resultData'];
 
       var nowDStart = new DateTime.now();
+
+      // print('object ' + busPoiArr.toString());
+      // print('object ' + busPoiArr.length.toString());
       for (int i = 0; i < busPoiArr.length; i++) {
         routePoi = routePoi.map((poi) {
           if (busPoiArr[i]['route_poi_info_id'] == poi.routePoiInfoId) {
             poi.status = busPoiArr[i]['status'];
+
+            // print('object ' + busPoiArr[i]['status'].toString());
 
             DateTime dt = DateTime.parse(busPoiArr[i]['checkin_datetime'])
                 .add(Duration(hours: 7));
@@ -356,6 +374,10 @@ class _ProcessWorkState extends State<ProcessWork> {
 
           return poi;
         }).toList();
+      }
+
+      for (var i = 0; i < routePoi.length; i++) {
+        print('object ' + routePoi[i].status.toString());
       }
 
       for (int i = 0; i < routePoi.length; i++) {
@@ -375,6 +397,9 @@ class _ProcessWorkState extends State<ProcessWork> {
         routePoi[i].checkInTime = ChangeFormateDateTimeToTime(dt.toString());
       }
  */
+
+      print('object ' + arrStatus.toString());
+
       if (arrStatus.contains("IDLE") || arrStatus.contains("CHECKED-IN")) {
         canFinishJob = false;
       } else {
@@ -889,6 +914,8 @@ class _ProcessWorkState extends State<ProcessWork> {
   }
 
   Widget getBox(context, RoutePoiInfo content) {
+    // print('object ' + content.status.toString());
+
     /*  if (status == 'finished')
     return _finishedBox(context);
   else if (status == 'waiting')
@@ -930,6 +957,9 @@ class _ProcessWorkState extends State<ProcessWork> {
 
   Future<void> _checkInternet() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
+
+    // print("WTGHHH" + connectivityResult.toString());
+
     if (connectivityResult == ConnectivityResult.none) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
@@ -1001,8 +1031,12 @@ class _ProcessWorkState extends State<ProcessWork> {
         MaterialPageRoute(
           builder: (context) => ConfirmFinishJob(),
           settings: RouteSettings(
-            arguments: PassDataFinishJobModel(busJobPoiId, status,
-                content.locationNameTh, busJobInfoId, content.passengerCount),
+            arguments: PassDataFinishJobModel(
+                busJobPoiId,
+                status,
+                content.locationNameTh,
+                busJobInfoId,
+                content.passengerCount ?? 0),
           ),
         ),
       ).then((value) async {
@@ -1048,8 +1082,8 @@ class _ProcessWorkState extends State<ProcessWork> {
                       busJobPoiId,
                       status,
                       content.locationNameTh,
-                      content.passengerCount,
-                      content.passengerCountUsed),
+                      content.passengerCount ?? 0,
+                      content.passengerCountUsed ?? 0),
                 ),
               ),
             ).then((value) async {
@@ -1065,8 +1099,8 @@ class _ProcessWorkState extends State<ProcessWork> {
                       busJobPoiId,
                       status,
                       content.locationNameTh,
-                      content.passengerCount,
-                      content.passengerCountUsed),
+                      content.passengerCount ?? 0,
+                      content.passengerCountUsed ?? 0),
                 ),
               ),
             ).then((value) async {
@@ -1101,8 +1135,8 @@ class _ProcessWorkState extends State<ProcessWork> {
                         busJobPoiId,
                         status,
                         content.locationNameTh,
-                        content.passengerCount,
-                        content.passengerCountUsed),
+                        content.passengerCount ?? 0,
+                        content.passengerCountUsed ?? 0),
                   ),
                 ),
               ).then((value) async {
@@ -1166,8 +1200,8 @@ class _ProcessWorkState extends State<ProcessWork> {
                   busJobPoiId,
                   status,
                   content.locationNameTh,
-                  content.passengerCount,
-                  content.passengerCountUsed),
+                  content.passengerCount ?? 0,
+                  content.passengerCountUsed ?? 0),
             ),
           ),
         ).then((value) async {
@@ -1183,8 +1217,8 @@ class _ProcessWorkState extends State<ProcessWork> {
                   busJobPoiId,
                   status,
                   content.locationNameTh,
-                  content.passengerCount,
-                  content.passengerCountUsed),
+                  content.passengerCount ?? 0,
+                  content.passengerCountUsed ?? 0),
             ),
           ),
         ).then((value) async {

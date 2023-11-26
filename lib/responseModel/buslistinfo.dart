@@ -138,7 +138,7 @@ class CarInfo {
     required this.status,
     required this.numberOfSeat,
     required this.costPerMonth,
-    required this.imgPath,
+    this.imgPath,
     required this.carTypeId,
     required this.color,
     required this.brand,
@@ -156,7 +156,7 @@ class CarInfo {
   String status;
   int numberOfSeat;
   int costPerMonth;
-  String imgPath;
+  String? imgPath;
   String carTypeId;
   String color;
   String brand;
@@ -174,7 +174,7 @@ class CarInfo {
         status: json["status"],
         numberOfSeat: json["number_of_seat"],
         costPerMonth: json["cost_per_month"],
-        imgPath: json["img_path"],
+        imgPath: json["img_path"] ?? '',
         carTypeId: json["car_type_id"],
         color: json["color"],
         brand: json["brand"],

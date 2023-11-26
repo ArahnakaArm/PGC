@@ -354,7 +354,7 @@ class CarInfo {
   String status;
   int numberOfSeat;
   int costPerMonth;
-  String imgPath;
+  String? imgPath;
   String carTypeId;
   String color;
   String brand;
@@ -373,7 +373,7 @@ class CarInfo {
         status: json["status"],
         numberOfSeat: json["number_of_seat"],
         costPerMonth: json["cost_per_month"],
-        imgPath: json["img_path"],
+        imgPath: json["img_path"] ?? "",
         carTypeId: json["car_type_id"],
         color: json["color"],
         brand: json["brand"],
@@ -519,8 +519,8 @@ class EmpDepartmentInfo {
   String departmentCode;
   String empDepartmentNameTh;
   String empDepartmentNameEn;
-  String managerId;
-  String adminId;
+  String? managerId;
+  String? adminId;
   DateTime createdAt;
   DateTime updatedAt;
   dynamic deletedAt;
@@ -532,8 +532,8 @@ class EmpDepartmentInfo {
         departmentCode: json["department_code"],
         empDepartmentNameTh: json["emp_department_name_th"],
         empDepartmentNameEn: json["emp_department_name_en"],
-        managerId: json["manager_id"],
-        adminId: json["admin_id"],
+        managerId: json["manager_id"] ?? "",
+        adminId: json["admin_id"] ?? "",
         createdAt: DateTime.parse(json["created_at"]),
         updatedAt: DateTime.parse(json["updated_at"]),
         deletedAt: json["deleted_at"],

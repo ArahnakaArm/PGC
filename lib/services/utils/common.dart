@@ -251,7 +251,7 @@ Future<String> getNotificationsCount() async {
   String? token = await storage.read(key: 'token');
   String? userId = await storage.read(key: 'userId');
 
-  var queryString = "?is_read=false&receiver_id=${userId}";
+  var queryString = "?is_read=false&limit=0&receiver_id=${userId}";
   var getNotificationsCountUrl = Uri.parse(
       '${dotenv.env['BASE_API']}${dotenv.env['GET_NOTIFICATION']}${queryString}');
 
@@ -259,7 +259,7 @@ Future<String> getNotificationsCount() async {
       await getHttpWithToken(getNotificationsCountUrl, token);
 
   var count = jsonDecode(getNotificationsCountRes)['rowCount'] as int;
-  print(count.toString());
+
   return count.toString();
 }
 
