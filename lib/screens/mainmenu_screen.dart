@@ -42,6 +42,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
   AndroidNotificationChannel? channel;
   IO.Socket? socket;
   List<ResultDatum> busList = [];
+  String version = "";
 
   /// Initialize the [FlutterLocalNotificationsPlugin] package.
   ///
@@ -136,6 +137,7 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   @override
   void initState() {
+    setVersion();
     WidgetsBinding.instance.addObserver(this);
 
     var androidInitialize = new AndroidInitializationSettings('ic_launcher');
@@ -212,22 +214,31 @@ class _MainMenuScreenState extends State<MainMenuScreen>
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 25.0, vertical: 20),
                 child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      GestureDetector(onTap: () {}, child: _wigetProfilebar()),
-                      SizedBox(height: 30),
-                      _getWithNotiBoxMenu('assets/images/bus.png', 'รับงาน',
-                          Color.fromRGBO(255, 255, 255, 1), context),
-                      SizedBox(height: 22),
-                      _getCommonBoxMenu('assets/images/clock.png', 'ประวัติงาน',
-                          Color.fromRGBO(240, 173, 78, 1), context),
-                      SizedBox(height: 22),
-                      _getCommonBoxMenu(
-                          'assets/images/assist.png',
-                          'ติดต่อเจ้าหน้าที่',
-                          Color.fromRGBO(232, 85, 85, 1),
-                          context)
-                    ]),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    GestureDetector(onTap: () {}, child: _wigetProfilebar()),
+                    SizedBox(height: 30),
+                    _getWithNotiBoxMenu('assets/images/bus.png', 'รับงาน',
+                        Color.fromRGBO(255, 255, 255, 1), context),
+                    SizedBox(height: 22),
+                    _getCommonBoxMenu('assets/images/clock.png', 'ประวัติงาน',
+                        Color.fromRGBO(240, 173, 78, 1), context),
+                    SizedBox(height: 22),
+                    _getCommonBoxMenu(
+                        'assets/images/assist.png',
+                        'ติดต่อเจ้าหน้าที่',
+                        Color.fromRGBO(232, 85, 85, 1),
+                        context),
+                    SizedBox(
+                      height: 22,
+                    ),
+                    Center(
+                        child: Text(
+                      version,
+                      style: splashScreenLoadingTextStyle,
+                    )),
+                  ],
+                ),
               )
             ],
           ),
@@ -363,13 +374,12 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     String? token = await storage.read(key: 'token');
     String? userId = await storage.read(key: 'userId');
     DateTime nowLocal = new DateTime.now();
-    DateTime now = new DateTime.now()
-        .subtract(Duration(hours: 7))
-        .add(Duration(hours: 14));
+    DateTime now = new DateTime.now().subtract(Duration(hours: 7));
 
     if (now.day == nowLocal.day) {
       now = now.subtract(Duration(days: 1));
     }
+
     var dateFormatted = now.toIso8601String();
 
     var startDateToday =
@@ -391,19 +401,23 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     var busStatus = "CONFIRMED";
     var notCarSys = "CAR_SYS";
     var queryString =
-        '?bus_reserve_status_id=${busStatus}&exclude_allocated_by=${notCarSys}&start_trip_datetime=${startDateToday}&end_trip_datetime=${endDateThreeDays}';
+        '?bus_reserve_status_id=${busStatus}&exclude_allocated_by=${notCarSys}&start_trip_datetime=${startDateToday}&end_trip_datetime=${endDateThreeDays}&limit=0';
     var getBusInfoListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryString}&driver_id=${userId}');
     var res = await getHttpWithToken(getBusInfoListUrl, token);
 
-    busList = (jsonDecode(res)['resultData'] as List)
-        .map((i) => ResultDatum.fromJson(i))
-        .toList();
+    print("WORK COUNT WORK " + getBusInfoListUrl.toString());
 
-    var workCountConverted = busList.length;
+    // busList = (jsonDecode(res)['resultData'] as List)
+    //     .map((i) => ResultDatum.fromJson(i))
+    //     .toList();
+
+    // var workCountConverted = busList.length;
+
+    // print("WORK COUNT WORK " + jsonDecode(res)['rowCount'].toString());
 
     setState(() {
-      workCounts = workCountConverted.toString();
+      workCounts = jsonDecode(res)['rowCount'].toString() ?? "0";
     });
   }
 
@@ -488,6 +502,12 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     } catch (e) {
       return '';
     }
+  }
+
+  void setVersion() {
+    setState(() {
+      version = 'V ${dotenv.env['CURRENT_VER']}';
+    });
   }
 
   Future<void> _sendNotiToken(notiToken) async {

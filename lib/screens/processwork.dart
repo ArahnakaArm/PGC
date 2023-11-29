@@ -140,14 +140,6 @@ class _ProcessWorkState extends State<ProcessWork> {
     ));
   }
 
-  void _deleteNotification() async {
-    setState(() {
-      notiCounts = "0";
-    });
-    final storage = new FlutterSecureStorage();
-    await storage.write(key: 'notiCounts', value: notiCounts);
-  }
-
   Future<void> _getBusJobInfo() async {
     var aTime = 0;
     var bTime = 0;
@@ -299,14 +291,6 @@ class _ProcessWorkState extends State<ProcessWork> {
         }
 
         arriveNumber = arriveNumber + (routePoi[i].passengerCountUsed ?? 0);
-
-        if (i < routePoi.length - 1 && routePoi[i].passengerCount != 0) {
-          print('object ' + routePoi[i].status.toString());
-
-          arrStatus.add(routePoi[i].status);
-        } else if (i == 0 && tripType == "outbound") {
-          arrStatus.add(routePoi[i].status);
-        }
       }
 
       var nowBEnd = new DateTime.now();
@@ -357,6 +341,17 @@ class _ProcessWorkState extends State<ProcessWork> {
       for (int i = 0; i < busPoiArr.length; i++) {
         routePoi = routePoi.map((poi) {
           if (busPoiArr[i]['route_poi_info_id'] == poi.routePoiInfoId) {
+            print("GET " + busPoiArr[i]['status'].toString());
+
+            if (i < routePoi.length - 1) {
+              arrStatus.add(routePoi[i].status);
+            } else if (i == 0 &&
+                busPoiArr[i]['route_info']['trip_type'] == "outbound") {
+              arrStatus.add(routePoi[i].status);
+            }
+
+            // arrStatus.add(busPoiArr[i]['status']);
+
             poi.status = busPoiArr[i]['status'];
 
             // print('object ' + busPoiArr[i]['status'].toString());
@@ -1295,7 +1290,7 @@ class _ProcessWorkState extends State<ProcessWork> {
     String? userId = await storage.read(key: 'userId');
     var routePoiId = content.routePoiInfoId;
     var queryString =
-        '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${currentRouteInfoId}';
+        '?route_poi_info_id=${routePoiId}&bus_job_info_id=${busJobInfoId}&route_info_id=${currentRouteInfoId}&limit=1';
 
     var getbusPoiUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_POI']}${queryString}');

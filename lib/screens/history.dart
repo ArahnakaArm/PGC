@@ -57,7 +57,8 @@ class _HistoryState extends State<History> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  _headerWidget('assets/images/list.png', 'ประวัติงาน'),
+                  _headerWidget(
+                      'assets/images/list.png', 'ประวัติงาน(10 รายการล่าสุด)'),
                   SizedBox(
                     height: 16,
                   ),

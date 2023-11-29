@@ -251,8 +251,6 @@ class _ScanAndListState extends State<ScanAndList> {
             ],
           ),
         )));
-
-    ;
   }
 
   void _checkInternet(busJobPoiId) async {
@@ -316,9 +314,6 @@ class _ScanAndListState extends State<ScanAndList> {
       passengerCounts = usedPassengerList.length;
     });
 
-    print("data ID and Type " + passengerCounts.toString());
-    print("data ID and Type " + busJobInfoId);
-
     if (passengerCounts == passengerMaxCount) {
       if (busPoiInfoStatus != "FINISHED") {
         await _updateBusPoiInfo();
@@ -368,11 +363,6 @@ class _ScanAndListState extends State<ScanAndList> {
         '?route_poi_info_id=${routePoiId}&passenger_status_id=${status}&bus_job_info_id=${busJobInfoId}';
     var getPassengerListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_USED_PASSENGER_LIST']}${queryString}');
-
-    print("PPPLOKOK :" + routePoiId);
-    print("PPPLOKOK :" + status);
-    print("PPPLOKOK :" + busJobInfoId);
-    print("PPPLOKOK :" + getPassengerListUrl.toString());
 
     var res = await getHttpWithToken(getPassengerListUrl, token);
 

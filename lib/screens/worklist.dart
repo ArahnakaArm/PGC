@@ -170,6 +170,9 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
     var getBusInfoListUrlThreeDays = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryStringThreeDays}');
 
+    print("WORK COUNT WORK " + getBusInfoListUrl.toString());
+
+    print("WORK COUNT WORK 2" + getBusInfoListUrlThreeDays.toString());
     try {
       var res = await getHttpWithToken(getBusInfoListUrl, token);
 
@@ -1461,7 +1464,8 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
         try {
           var res = await getHttpWithToken(getBusInfoListUrl, token);
 
-          carMileEnd = (jsonDecode(res)['resultData'][0]['car_mileage_end']);
+          carMileEnd =
+              (jsonDecode(res)['resultData'][0]['car_mileage_end'] ?? 0);
 
           if (carMileEnd == null) carMileEnd = 0;
 
@@ -1469,7 +1473,7 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
         } catch (e) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+            SnackBar(content: Text('${dotenv.env['ERROR_TEXT']}')),
           );
         }
 

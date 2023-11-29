@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND" />
    <application
         android:label="PCG Driver"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/ic_launcher_test"
         android:usesCleartextTraffic="true"
         >
         

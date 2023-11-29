@@ -82,7 +82,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     String? token = await storage.read(key: 'token');
     String? userId = await storage.read(key: 'userId');
 
-    var queryString = '?receiver_id=${userId}&offset=0&limit=10';
+    var queryString = '?receiver_id=${userId}&offset=0&limit=20';
     var getNotificationListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_NOTIFICATION']}${queryString}');
 
@@ -143,7 +143,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     String? token = await storage.read(key: 'token');
     String? userId = await storage.read(key: 'userId');
 
-    var queryString = '?receiver_id=${userId}&offset=0&limit=10&is_read=false';
+    var queryString = '?receiver_id=${userId}&offset=0&limit=20&is_read=false';
     var getNotificationListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_NOTIFICATION']}${queryString}');
 

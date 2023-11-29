@@ -32,7 +32,7 @@ class _ScanAndListOutBoundState extends State<ScanAndListOutBound> {
   QRViewController? controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   int _selectedPage = 0;
-  PageController? _pageController;
+  PageController? _pageController = PageController();
   PassDataModel? passedData;
   List<PassengerModel> passengers = [
     PassengerModel('นาย A', 'เข็นรถ', '12.00 น.'),
@@ -51,14 +51,6 @@ class _ScanAndListOutBoundState extends State<ScanAndListOutBound> {
   int passengerCounts = 0;
   int passengerMaxCount = 0;
   var notiCounts = "0";
-  void _changePage(int pageNum) {
-    setState(() {
-      _selectedPage = pageNum;
-      _pageController?.animateToPage(pageNum,
-          duration: Duration(milliseconds: 500),
-          curve: Curves.fastLinearToSlowEaseIn);
-    });
-  }
 
   @override
   void reassemble() {
@@ -71,7 +63,6 @@ class _ScanAndListOutBoundState extends State<ScanAndListOutBound> {
 
   @override
   void initState() {
-    _pageController = PageController();
     passengerCounts = usedPassengerList.length;
     /*  Future.delayed(Duration.zero, () {
       setState(() {
@@ -130,6 +121,20 @@ class _ScanAndListOutBoundState extends State<ScanAndListOutBound> {
     if (notiCountsStorage != null) {
       setState(() {
         notiCounts = notiCountsStorage;
+      });
+    }
+  }
+
+  void _changePage(int pageNum) {
+    if (mounted) {
+      setState(() {
+        _selectedPage = pageNum;
+
+        if (_pageController!.hasClients) {
+          _pageController?.animateToPage(pageNum,
+              duration: Duration(milliseconds: 500),
+              curve: Curves.fastLinearToSlowEaseIn);
+        }
       });
     }
   }
@@ -193,27 +198,33 @@ class _ScanAndListOutBoundState extends State<ScanAndListOutBound> {
                                     MainAxisAlignment.spaceBetween,
                                 children: <Widget>[
                                   Expanded(
-                                      child: TabButton(
-                                          text: 'สแกน',
-                                          fontSize: 15,
-                                          pageNumber: 0,
-                                          selectedPage: _selectedPage,
-                                          onPressed: () {
-                                            _changePage(0);
-                                          },
-                                          haveNumText: false,
-                                          numText: '0')),
+                                      child: GestureDetector(
+                                    onTap: () {
+                                      _changePage(0);
+                                    },
+                                    child: TabButton(
+                                        text: 'สแกน',
+                                        fontSize: 15,
+                                        pageNumber: 0,
+                                        selectedPage: _selectedPage,
+                                        onPressed: () {},
+                                        haveNumText: false,
+                                        numText: '0'),
+                                  )),
                                   Expanded(
-                                      child: TabButton(
-                                          text: 'ขึ้นรถแล้ว',
-                                          fontSize: 15,
-                                          pageNumber: 1,
-                                          selectedPage: _selectedPage,
-                                          onPressed: () {
-                                            _changePage(1);
-                                          },
-                                          haveNumText: true,
-                                          numText: passengerCounts.toString()))
+                                      child: GestureDetector(
+                                    onTap: () {
+                                      _changePage(1);
+                                    },
+                                    child: TabButton(
+                                        text: 'ขึ้นรถแล้ว',
+                                        fontSize: 15,
+                                        pageNumber: 1,
+                                        selectedPage: _selectedPage,
+                                        onPressed: () {},
+                                        haveNumText: true,
+                                        numText: passengerCounts.toString()),
+                                  ))
                                 ],
                               ),
                             ),
@@ -275,10 +286,12 @@ class _ScanAndListOutBoundState extends State<ScanAndListOutBound> {
     busJobInfoId = getBusPoiResObj['resultData']['bus_job_info_id'];
     routeInfoId = getBusPoiResObj['resultData']['route_info_id'];
 
-    setState(() {
-      busPoiInfoStatus = getBusPoiResObj['resultData']['status'];
-      checkInTime = ChangeFormateDateTimeToTime(busJobPoiCheckinTime);
-    });
+    if (mounted) {
+      setState(() {
+        busPoiInfoStatus = getBusPoiResObj['resultData']['status'];
+        checkInTime = ChangeFormateDateTimeToTime(busJobPoiCheckinTime);
+      });
+    }
   }
 
   Future<void> _getBusJobInfo() async {
@@ -420,19 +433,22 @@ class _ScanAndListOutBoundState extends State<ScanAndListOutBound> {
     });
     controller.resumeCamera();
     controller.scannedDataStream.listen((scanData) {
-      setState(() async {
-        result = scanData;
+      print("SCAN DATA " + scanData.code.toString());
+      // setState(() async {
+      //   result = scanData;
 
-        controller?.pauseCamera();
+      //   controller.pauseCamera();
 
-        await _putEmployee(result?.code);
+      //   await _putEmployee(result?.code);
+      // });
 
-        /*   _showDialog(context, result.code); */
-      });
+      _putEmployee(scanData.code);
     });
   }
 
   Future<void> _putEmployee(data) async {
+    controller?.pauseCamera();
+
     var dataId = "";
     var dataType = "";
     try {
@@ -1218,8 +1234,8 @@ class _ScanAndListOutBoundState extends State<ScanAndListOutBound> {
       "checkin_datetime": unFormatCheckIntime.toString(),
       "status": "FINISHED"
     };
-    var putPoiResObj =
-        await putHttpWithToken(updatebusPoiUrl, token, updateBusPoiObj);
+    // var putPoiResObj =
+    await putHttpWithToken(updatebusPoiUrl, token, updateBusPoiObj);
 
     Navigator.pop(context);
   }
