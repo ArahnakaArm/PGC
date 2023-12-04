@@ -157,9 +157,6 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
     var endDateThreeDays =
         dateFormattedThreeDay.toString().split('T')[0] + 'T16:59:59%2B00:00';
 
-    print("PPPLOKOK55 :" + startDateToday.toString());
-    print("PPPLOKOK55 :" + endDateToday.toString());
-
     var queryString =
         '?bus_reserve_status_id=${busStatus}&driver_id=${userId}&exclude_allocated_by=${notCarSys}&start_trip_datetime=${startDateToday}&end_trip_datetime=${endDateToday}';
     var getBusInfoListUrl = Uri.parse(

@@ -44,3 +44,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+password.txt
+pcg.jks
+output_upload_certificate.pem

@@ -419,8 +419,51 @@ class _HistoryState extends State<History> {
     String? token = await storage.read(key: 'token');
     String? userId = await storage.read(key: 'userId');
     var busStatus = "COMPLETED";
+
+    DateTime nowLocal = new DateTime.now();
+    DateTime now = new DateTime.now().subtract(Duration(hours: 7));
+
+    if (now.day == nowLocal.day) {
+      now = now.subtract(Duration(days: 1));
+    }
+
+    var dateFormatted = now.toIso8601String();
+
+    var startDateToday =
+        dateFormatted.toString().split('T')[0] + 'T14:00:00%2B00:00';
+
+    DateTime nowEndDate = new DateTime.now().subtract(Duration(hours: 7));
+
+    if (now.hour >= 17) {
+      nowEndDate = nowEndDate.add(Duration(days: 1));
+    }
+
+    var endDateFormatted = nowEndDate.toIso8601String();
+
+    var endDateToday =
+        endDateFormatted.toString().split('T')[0] + 'T16:59:59%2B00:00';
+
+    DateTime oneDay = new DateTime.now().subtract(Duration(hours: 7));
+
+    if (oneDay.hour >= 17) {
+      oneDay = oneDay.add(Duration(days: 1));
+    }
+
+    DateTime sevenDayAgo = new DateTime.now()
+        .subtract(Duration(hours: 7))
+        .subtract(Duration(hours: 168));
+
+    if (sevenDayAgo.hour >= 17) {
+      sevenDayAgo = sevenDayAgo.add(Duration(days: 1));
+    }
+
+    var dateFormattedSevenDayAgo = sevenDayAgo.toIso8601String();
+
+    var endDateSevenDaysAgo =
+        dateFormattedSevenDayAgo.toString().split('T')[0] + 'T16:59:59%2B00:00';
+
     var queryString =
-        '?bus_reserve_status_id=${busStatus}&driver_id=${userId}&limit=10';
+        '?bus_reserve_status_id=${busStatus}&driver_id=${userId}&start_trip_datetime=${endDateSevenDaysAgo}&end_trip_datetime=${endDateToday}';
     var getBusInfoListUrl = Uri.parse(
         '${dotenv.env['BASE_API']}${dotenv.env['GET_BUS_JOB_INFO_LIST']}${queryString}');
     var res = await getHttpWithToken(getBusInfoListUrl, token);

@@ -143,48 +143,29 @@ class _NotificationScreenState extends State<NotificationScreen>
     String? token = await storage.read(key: 'token');
     String? userId = await storage.read(key: 'userId');
 
-    var queryString = '?receiver_id=${userId}&offset=0&limit=20&is_read=false';
-    var getNotificationListUrl = Uri.parse(
-        '${dotenv.env['BASE_API']}${dotenv.env['GET_NOTIFICATION']}${queryString}');
-
     try {
-      var res = await getHttpWithToken(getNotificationListUrl, token);
+      var updateNotificationObj = {};
+
+      var putNotificationUrl = Uri.parse(
+          '${dotenv.env['BASE_API']}${dotenv.env['GET_NOTIFICATION']}/read-all');
+
+      var res = await putHttpWithToken(
+          putNotificationUrl, token, updateNotificationObj);
 
       String resultCode = (jsonDecode(res)['resultCode']);
 
-      if (resultCode == "50000") {
+      if (resultCode != "20000") {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ไม่สามารถโหลดข้อมูลได้')),
+          SnackBar(content: Text('ไม่สามารถอัพเดทข้อมูลได้')),
         );
-        isLoading = false;
-      } else {
-        notificationListUnread = (jsonDecode(res)['resultData'] as List)
-            .map((i) => ResultNotificationList.fromJson(i))
-            .toList();
-
-        /* busList = []; */
+        return;
       }
-      for (int i = 0; i < notificationListUnread.length; i++) {
-        try {
-          var updateNotificationObj = {
-            "receiver_id": notificationListUnread[i].receiverId,
-            "text": notificationListUnread[i].notiText,
-            "detail": notificationListUnread[i].notiDetail,
-            "is_read": "true"
-          };
 
-          var putNotificationUrl = Uri.parse(
-              '${dotenv.env['BASE_API']}${dotenv.env['GET_NOTIFICATION']}/${notificationListUnread[i].notificationId}');
-
-          var res = await putHttpWithToken(
-              putNotificationUrl, token, updateNotificationObj);
-        } catch (e) {
-          print(e);
-        }
-        setState(() {
+      setState(() {
+        for (var i = 0; i < notificationList.length; i++) {
           notificationList[i].isRead = "true";
-        });
-      }
+        }
+      });
     } catch (e) {
       print(e);
       ScaffoldMessenger.of(context).showSnackBar(
