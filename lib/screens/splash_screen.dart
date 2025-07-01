@@ -147,10 +147,6 @@ class _SplashScreenState extends State<SplashScreen>
             decoration: BoxDecoration(
                 color: Color.fromRGBO(75, 132, 241, 1),
                 borderRadius: BorderRadius.circular(20)),
-            /*    child: Text(
-              'เกิดข้อผิดพลาดระหว่างอ่านข้อมูล',
-              style: toastTextStyle,
-            ), */
             child: Text(
               e.toString(),
               style: toastTextStyle,
@@ -196,13 +192,6 @@ class _SplashScreenState extends State<SplashScreen>
       } else {
         _goLogin();
       }
-
-      /*     Timer(
-          Duration(seconds: 2),
-          () => Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => MainMenuScreen()),
-              )); */
     } catch (e) {
       FToast fToast = FToast();
       fToast.init(context);

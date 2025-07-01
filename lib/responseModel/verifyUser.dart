@@ -39,7 +39,7 @@ class VerifyUserResultData {
   VerifyUserResultData({
     this.lastLogin,
     required this.userId,
-    required this.imageProfileFile,
+    this.imageProfileFile,
     this.driverPriority,
     required this.signatureFile,
     required this.token,
@@ -63,7 +63,7 @@ class VerifyUserResultData {
 
   dynamic lastLogin;
   String userId;
-  String imageProfileFile;
+  String? imageProfileFile;
   dynamic driverPriority;
   String signatureFile;
   String token;
@@ -88,7 +88,7 @@ class VerifyUserResultData {
       VerifyUserResultData(
         lastLogin: json["last_login"],
         userId: json["user_id"],
-        imageProfileFile: json["image_profile_file"],
+        imageProfileFile: json["image_profile_file"] ?? null,
         driverPriority: json["driver_priority"],
         signatureFile: json["signature_file"],
         token: json["token"],

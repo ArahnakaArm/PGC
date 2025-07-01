@@ -134,7 +134,7 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+        SnackBar(content: Text('${dotenv.env['ERROR_TEXT']}')),
       );
     }
   }
@@ -324,7 +324,6 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
         );
       } else {
         await _callHttpImage(_imagePath, miles);
-        _goSuccessFinishJob(context);
       }
     }
   }
@@ -556,10 +555,13 @@ class _ConfirmFinishJobState extends State<ConfirmFinishJob> {
       }
 
       Navigator.pop(context);
+
+      _goSuccessFinishJob(context);
     } catch (e) {
+      print("object2222s" + e.toString());
       Navigator.pop(context); //pop dialog
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+        SnackBar(content: Text('${e.toString()}')),
       );
     }
     //pop dialog

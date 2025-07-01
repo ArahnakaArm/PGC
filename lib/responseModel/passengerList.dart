@@ -250,9 +250,9 @@ class BusReserveInfo {
     required this.isNormalTime,
     required this.empDepartmentId,
     required this.busReserveStatusId,
-    required this.reserveReason,
+    this.reserveReason,
     this.busReserveReasonCancelId,
-    required this.busReserveReasonText,
+    this.busReserveReasonText,
     this.canceledBy,
     this.canceledAt,
     required this.createdBy,
@@ -271,9 +271,9 @@ class BusReserveInfo {
   String isNormalTime;
   String empDepartmentId;
   String busReserveStatusId;
-  String reserveReason;
+  String? reserveReason;
   dynamic busReserveReasonCancelId;
-  String busReserveReasonText;
+  String? busReserveReasonText;
   dynamic canceledBy;
   dynamic canceledAt;
   String createdBy;
@@ -292,9 +292,9 @@ class BusReserveInfo {
         isNormalTime: json["is_normal_time"],
         empDepartmentId: json["emp_department_id"],
         busReserveStatusId: json["bus_reserve_status_id"],
-        reserveReason: json["reserve_reason"],
+        reserveReason: json["reserve_reason"] ?? "",
         busReserveReasonCancelId: json["bus_reserve_reason_cancel_id"],
-        busReserveReasonText: json["bus_reserve_reason_text"],
+        busReserveReasonText: json["bus_reserve_reason_text"] ?? "",
         canceledBy: json["canceled_by"],
         canceledAt: json["canceled_at"],
         createdBy: json["created_by"],
@@ -334,7 +334,7 @@ class CarInfo {
     required this.order,
     required this.status,
     required this.numberOfSeat,
-    required this.costPerMonth,
+    this.costPerMonth,
     required this.imgPath,
     required this.carTypeId,
     required this.color,
@@ -353,7 +353,7 @@ class CarInfo {
   int order;
   String status;
   int numberOfSeat;
-  int costPerMonth;
+  int? costPerMonth;
   String? imgPath;
   String carTypeId;
   String color;
@@ -372,7 +372,7 @@ class CarInfo {
         order: json["order"],
         status: json["status"],
         numberOfSeat: json["number_of_seat"],
-        costPerMonth: json["cost_per_month"],
+        costPerMonth: json["cost_per_month"] ?? 0,
         imgPath: json["img_path"] ?? "",
         carTypeId: json["car_type_id"],
         color: json["color"],

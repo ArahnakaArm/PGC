@@ -155,7 +155,7 @@ class BusReserveInfoInfo {
     required this.isNormalTime,
     required this.empDepartmentId,
     required this.busReserveStatusId,
-    required this.reserveReason,
+    this.reserveReason,
     this.busReserveReasonCancelId,
     this.busReserveReasonText,
     this.canceledBy,
@@ -176,7 +176,7 @@ class BusReserveInfoInfo {
   String isNormalTime;
   String empDepartmentId;
   String busReserveStatusId;
-  String reserveReason;
+  String? reserveReason;
   dynamic busReserveReasonCancelId;
   dynamic busReserveReasonText;
   dynamic canceledBy;
@@ -198,9 +198,12 @@ class BusReserveInfoInfo {
         isNormalTime: json["is_normal_time"],
         empDepartmentId: json["emp_department_id"],
         busReserveStatusId: json["bus_reserve_status_id"],
-        reserveReason: json["reserve_reason"],
+        reserveReason:
+            json["reserve_reason"] == null ? "" : json["reserve_reason"],
         busReserveReasonCancelId: json["bus_reserve_reason_cancel_id"],
-        busReserveReasonText: json["bus_reserve_reason_text"],
+        busReserveReasonText: json["bus_reserve_reason_text"] == null
+            ? ""
+            : json["bus_reserve_reason_text"],
         canceledBy: json["canceled_by"],
         canceledAt: json["canceled_at"],
         createdBy: json["created_by"],

@@ -919,6 +919,8 @@ class _ProcessWorkState extends State<ProcessWork> {
     return _todoBox();
   else if (status == 'success') return _successBox(context); */
 
+    print("CONTENT NUMBER  ${content.order} " + content.status.toString());
+
     if (content.order == 0) {
       if (content.status == 'IDLE') {
         return _todoBoxFirst(context, content);
@@ -1051,7 +1053,7 @@ class _ProcessWorkState extends State<ProcessWork> {
       );
       try {
         Position pos = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
+            desiredAccuracy: LocationAccuracy.low);
         double diffDistance = Geolocator.distanceBetween(
             pos.latitude,
             pos.longitude,
@@ -1164,9 +1166,10 @@ class _ProcessWorkState extends State<ProcessWork> {
           }); */
         }
       } catch (e) {
+        print("object222" + e.toString());
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${dotenv.env['NO_PERMISSION_GPS']}')),
+          SnackBar(content: Text('${dotenv.env['ERROR_TEXT']}')),
         );
       }
     } else {

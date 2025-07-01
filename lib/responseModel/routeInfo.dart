@@ -125,7 +125,7 @@ class CreatedByInfo {
   CreatedByInfo({
     required this.lastLogin,
     required this.userId,
-    required this.imageProfileFile,
+    this.imageProfileFile,
     this.driverPriority,
     this.signatureFile,
     this.token,
@@ -148,7 +148,7 @@ class CreatedByInfo {
 
   DateTime lastLogin;
   String userId;
-  String imageProfileFile;
+  String? imageProfileFile;
   dynamic driverPriority;
   dynamic signatureFile;
   dynamic token;
@@ -171,7 +171,7 @@ class CreatedByInfo {
   factory CreatedByInfo.fromJson(Map<String, dynamic> json) => CreatedByInfo(
         lastLogin: DateTime.parse(json["last_login"]),
         userId: json["user_id"],
-        imageProfileFile: json["image_profile_file"],
+        imageProfileFile: json["image_profile_file"] ?? null,
         driverPriority: json["driver_priority"],
         signatureFile: json["signature_file"],
         token: json["token"],

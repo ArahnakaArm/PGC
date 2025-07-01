@@ -124,7 +124,7 @@ class CarInfo {
     required this.order,
     required this.status,
     required this.numberOfSeat,
-    required this.costPerMonth,
+    this.costPerMonth,
     required this.imgPath,
     required this.carTypeId,
     required this.color,
@@ -142,7 +142,7 @@ class CarInfo {
   int order;
   String status;
   int numberOfSeat;
-  int costPerMonth;
+  int? costPerMonth;
   String? imgPath;
   String carTypeId;
   String color;
@@ -160,7 +160,7 @@ class CarInfo {
         order: json["order"],
         status: json["status"],
         numberOfSeat: json["number_of_seat"],
-        costPerMonth: json["cost_per_month"],
+        costPerMonth: json["cost_per_month"] ?? 0,
         imgPath: json["img_path"] ?? "",
         carTypeId: json["car_type_id"],
         color: json["color"],
@@ -197,7 +197,7 @@ class DriverInfo {
   DriverInfo({
     required this.lastLogin,
     required this.userId,
-    required this.imageProfileFile,
+    this.imageProfileFile,
     this.driverPriority,
     this.signatureFile,
     this.token,
@@ -220,7 +220,7 @@ class DriverInfo {
 
   DateTime lastLogin;
   String userId;
-  String imageProfileFile;
+  String? imageProfileFile;
   dynamic driverPriority;
   dynamic signatureFile;
   dynamic token;
@@ -243,7 +243,7 @@ class DriverInfo {
   factory DriverInfo.fromJson(Map<String, dynamic> json) => DriverInfo(
         lastLogin: DateTime.parse(json["last_login"]),
         userId: json["user_id"],
-        imageProfileFile: json["image_profile_file"],
+        imageProfileFile: json["image_profile_file"] ?? null,
         driverPriority: json["driver_priority"],
         signatureFile: json["signature_file"],
         token: json["token"],

@@ -287,11 +287,16 @@ class _WorkListState extends State<WorkList> with WidgetsBindingObserver {
         });
       }
     } catch (e) {
+      print('TTTTTTTT' + e.toString());
       print(e.toString());
       if (mounted) {
         print(e.toString());
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+        // );
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${dotenv.env['NO_INTERNET_CONNECTION']}')),
+          SnackBar(content: Text('ไม่สามารถโหลดข้อมูลได้')),
         );
 
         setState(() {
