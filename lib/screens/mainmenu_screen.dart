@@ -109,12 +109,11 @@ class _MainMenuScreenState extends State<MainMenuScreen>
 
   Future _showNotification(data) async {
     var androidDetails = new AndroidNotificationDetails(
-        "channelId", "Work Notifications", "Send Work Notification",
+        "channelId", "Work Notifications",
         importance: Importance.max, channelShowBadge: true);
 
-    var iosDetails = new IOSNotificationDetails();
     var generalNotificationDetails =
-        new NotificationDetails(android: androidDetails, iOS: iosDetails);
+        new NotificationDetails(android: androidDetails);
 
     await localNotification?.show(
         0, data['title'], data['body'], generalNotificationDetails);
@@ -141,9 +140,9 @@ class _MainMenuScreenState extends State<MainMenuScreen>
     WidgetsBinding.instance.addObserver(this);
 
     var androidInitialize = new AndroidInitializationSettings('ic_launcher');
-    var iOSInitialize = new IOSInitializationSettings();
-    var initialzationSettings = new InitializationSettings(
-        android: androidInitialize, iOS: iOSInitialize);
+
+    var initialzationSettings =
+        new InitializationSettings(android: androidInitialize);
 
     localNotification = new FlutterLocalNotificationsPlugin();
 

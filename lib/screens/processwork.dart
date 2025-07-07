@@ -554,8 +554,17 @@ class _ProcessWorkState extends State<ProcessWork> {
       String? userId = await storage.read(key: 'userId');
       int socketInterval =
           int.parse(dotenv.env['SOCKET_INTERVAL_MINUTE']!) * 1000 * 60;
-      final positionStream =
-          _geolocatorPlatform.getPositionStream(timeInterval: socketInterval);
+
+      late LocationSettings locationSettings;
+
+      locationSettings = AndroidSettings(
+        accuracy: LocationAccuracy.high,
+        intervalDuration: const Duration(seconds: 10),
+        //(Optional) Set foreground notification config to keep the app alive
+        //when going to the background
+      );
+      final positionStream = _geolocatorPlatform.getPositionStream(
+          locationSettings: locationSettings);
       _positionStreamSubscription = positionStream.handleError((error) {
         _positionStreamSubscription?.cancel();
         _positionStreamSubscription = null;

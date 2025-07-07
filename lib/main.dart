@@ -37,20 +37,18 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   /// Initialize the [FlutterLocalNotificationsPlugin] package.
   FlutterLocalNotificationsPlugin localNotification;
   var androidInitialize = new AndroidInitializationSettings('ic_launcher');
-  var iOSInitialize = new IOSInitializationSettings();
-  var initialzationSettings = new InitializationSettings(
-      android: androidInitialize, iOS: iOSInitialize);
+  var initialzationSettings =
+      new InitializationSettings(android: androidInitialize);
 
   localNotification = new FlutterLocalNotificationsPlugin();
 
   localNotification.initialize(initialzationSettings);
   var androidDetails = new AndroidNotificationDetails(
-      "channelId", "Work Notifications", "Send Work Notification",
+      "channelId", "Work Notifications",
       importance: Importance.high, channelShowBadge: true);
 
-  var iosDetails = new IOSNotificationDetails();
   var generalNotificationDetails =
-      new NotificationDetails(android: androidDetails, iOS: iosDetails);
+      new NotificationDetails(android: androidDetails);
 
   /*  final convertedData2 = json.decode(convertedData) as Map<String, dynamic>; */
 
@@ -85,7 +83,6 @@ Future main() async {
     channel = const AndroidNotificationChannel(
       'high_importance_channel', // id
       'High Importance Notifications', // title
-      'This channel is used for important notifications.', // description
       importance: Importance.max,
     );
 
