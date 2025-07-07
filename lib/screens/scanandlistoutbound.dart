@@ -20,7 +20,7 @@ import 'package:pgc/widgets/dialogbox/notiScanDialogBox.dart';
 import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/model/passenger.dart';
 import 'package:pgc/widgets/tabbutton.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 
 class ScanAndListOutBound extends StatefulWidget {
   @override

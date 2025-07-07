@@ -26,7 +26,7 @@ import 'package:pgc/utilities/constants.dart';
 import 'package:pgc/model/passenger.dart';
 import 'package:pgc/widgets/tabbutton.dart';
 import 'package:pgc/widgets/commonsmallprocessbackground.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 
 class ScanAndList extends StatefulWidget {
   @override

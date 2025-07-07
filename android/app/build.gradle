@@ -15,6 +15,7 @@ if (localPropertiesFile.exists()) {
 
 
 
+
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
     flutterVersionCode = '1'
@@ -27,11 +28,12 @@ if (flutterVersionName == null) {
 
 
 android {
-    compileSdkVersion 34
-
+    namespace "com.makewell.pcg" 
+    compileSdkVersion 35
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+        coreLibraryDesugaringEnabled true
     }
 
     sourceSets {
@@ -45,6 +47,10 @@ android {
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
     }
 
     buildTypes {

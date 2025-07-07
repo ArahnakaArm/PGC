@@ -1,0 +1,2 @@
+/Applications/Works/OUTSOURCE/PCG/android/app/.cxx/RelWithDebInfo/3f162w6h/x86_64/CMakeFiles/edit_cache.dir
+/Applications/Works/OUTSOURCE/PCG/android/app/.cxx/RelWithDebInfo/3f162w6h/x86_64/CMakeFiles/rebuild_cache.dir

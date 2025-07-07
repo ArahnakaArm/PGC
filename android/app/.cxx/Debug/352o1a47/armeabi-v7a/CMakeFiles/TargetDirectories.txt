@@ -1,0 +1,2 @@
+/Applications/Works/OUTSOURCE/PCG/android/app/.cxx/Debug/352o1a47/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Applications/Works/OUTSOURCE/PCG/android/app/.cxx/Debug/352o1a47/armeabi-v7a/CMakeFiles/rebuild_cache.dir
